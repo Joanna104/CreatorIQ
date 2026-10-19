@@ -1,0 +1,11 @@
+# Runtime dependencies (exact versions this project was built and tested with).
+# Packages imported directly by app/ and migrations/ are all listed explicitly,
+# including pydantic and starlette, which FastAPI also depends on.
+fastapi==0.143.5
+starlette==1.9.0
+pydantic==2.14.1
+pydantic-settings==2.16.0
+uvicorn[standard]==0.54.0
+SQLAlchemy==2.1.5
+alembic==1.20.0
+psycopg[binary]==3.3.6

@@ -1,0 +1,15 @@
+# secrets / local config
+.env
+
+# python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# editors / OS
+.idea/
+.vscode/
+.DS_Store

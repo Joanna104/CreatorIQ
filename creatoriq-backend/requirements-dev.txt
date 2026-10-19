@@ -1,0 +1,8 @@
+-r requirements.txt
+pytest==9.1.1
+# HTTP client used by FastAPI/Starlette's TestClient. Starlette prefers httpx2 and warns
+# when only the older httpx is installed; both fastapi and starlette list httpx2 as an extra.
+httpx2==2.13.1
+# Imported by tests/conftest.py (also pulled in by pydantic-settings).
+python-dotenv==1.2.4
+ruff==0.17.1

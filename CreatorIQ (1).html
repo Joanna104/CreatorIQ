@@ -1,0 +1,2139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CreatorIQ — Your AI Creative Operating System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-void:#f7f4ee;
+  --bg-navy:#ebe9e1;
+  --bg-navy-2:#f2efe7;
+  --royal:#e43d12;
+  --royal-2:#c2350e;
+  --purple:#d6536d;
+  --purple-2:#ffa2b6;
+  --cyan:#efb11d;
+  --cyan-soft:#f5c94a;
+  --grey:#726a5e;
+  --grey-soft:#4a443a;
+  --white:#231d18;
+  --glass:rgba(255,255,255,0.65);
+  --glass-border:rgba(35,29,24,0.08);
+  --glass-border-hi:rgba(228,61,18,0.4);
+  --danger:#c93223;
+  --amber:#8a5f0a;
+  --green:#4d7332;
+  --font-display:'Anton', sans-serif;
+  --font-body:'Inter', sans-serif;
+  --font-mono:'JetBrains Mono', monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  font-family:var(--font-body);
+  background:
+    radial-gradient(ellipse 80% 60% at 15% -10%, rgba(228,61,18,0.14), transparent 60%),
+    radial-gradient(ellipse 70% 50% at 90% 10%, rgba(214,83,109,0.10), transparent 55%),
+    radial-gradient(ellipse 60% 50% at 50% 100%, rgba(239,177,29,0.09), transparent 60%),
+    linear-gradient(180deg, var(--bg-void) 0%, var(--bg-navy) 45%, var(--bg-navy-2) 100%);
+  color:var(--white);
+  overflow-x:hidden;
+  position:relative;
+  min-height:100vh;
+  cursor:none;
+}
+@media (max-width:900px){ body{cursor:auto;} }
+::selection{background:rgba(214,83,109,0.35);}
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:600;letter-spacing:-0.02em;}
+p,span,div,button,input,textarea,label{font-family:var(--font-body);}
+.mono{font-family:var(--font-mono);}
+
+/* ---------- cursor glow ---------- */
+#cursor-glow{
+  position:fixed;top:0;left:0;width:420px;height:420px;border-radius:50%;
+  background:radial-gradient(circle, rgba(214,83,109,0.14) 0%, rgba(239,177,29,0.07) 35%, transparent 70%);
+  pointer-events:none;z-index:2;transform:translate(-50%,-50%);
+  transition:opacity .3s ease;will-change:transform;
+}
+#cursor-dot{
+  position:fixed;top:0;left:0;width:8px;height:8px;border-radius:50%;
+  background:var(--cyan-soft);box-shadow:0 0 12px 2px rgba(245,201,74,0.8);
+  pointer-events:none;z-index:9999;transform:translate(-50%,-50%);
+  transition:width .18s ease,height .18s ease,background .18s ease;
+}
+@media (max-width:900px){ #cursor-glow,#cursor-dot{display:none;} }
+
+/* ---------- particle canvas ---------- */
+#particles{position:fixed;inset:0;z-index:0;pointer-events:none;}
+
+/* ---------- app shell ---------- */
+#app{position:relative;z-index:3;min-height:100vh;perspective:1800px;}
+
+.nav-stepper{
+  position:fixed;bottom:22px;top:auto;left:50%;transform:translateX(-50%);
+  display:flex;gap:8px;z-index:50;
+  background:var(--glass);
+  border:1px solid var(--glass-border);
+  backdrop-filter:blur(20px);
+  padding:8px;border-radius:999px;
+}
+.nav-dot{
+  width:9px;height:9px;border-radius:50%;
+  background:rgba(35,29,24,0.15);
+  cursor:pointer;transition:all .35s cubic-bezier(.2,.8,.2,1);
+  position:relative;
+}
+.nav-dot.active{background:var(--cyan-soft);box-shadow:0 0 10px 2px rgba(245,201,74,0.7);width:24px;border-radius:5px;}
+.nav-dot:hover{background:var(--purple-2);transform:scale(1.5);}
+
+
+
+.screen{
+  min-height:100vh;width:100%;
+  display:none;
+  padding:120px 8vw 80px;
+  position:relative;
+  transform-style:preserve-3d;
+  backface-visibility:hidden;
+  will-change:transform,opacity,filter;
+  animation:screenIn .7s cubic-bezier(.16,.8,.24,1);
+}
+.screen.active{display:block;}
+@keyframes screenIn{
+  from{opacity:0;transform:translateY(24px) scale(.99);}
+  to{opacity:1;transform:translateY(0) scale(1);}
+}
+/* ---------- cinematic screen-to-screen transition (3D depth + morph-orb bridge) ---------- */
+.screen.leaving{
+  display:block;
+  position:absolute;top:0;left:0;
+  animation:screenOut .42s cubic-bezier(.5,0,.75,0) forwards;
+  pointer-events:none;
+}
+.screen.entering{
+  animation:screenInDeep .62s cubic-bezier(.16,.8,.24,1) backwards;
+}
+@keyframes screenOut{
+  0%{opacity:1;transform:translateZ(0) scale(1) rotateX(0deg);filter:blur(0px);}
+  100%{opacity:0;transform:translateZ(-260px) scale(.92) rotateX(6deg);filter:blur(6px);}
+}
+@keyframes screenInDeep{
+  0%{opacity:0;transform:translateZ(-220px) scale(.94) rotateX(-5deg);filter:blur(5px);}
+  60%{opacity:1;filter:blur(0px);}
+  100%{opacity:1;transform:translateZ(0) scale(1) rotateX(0deg);filter:blur(0px);}
+}
+@media (prefers-reduced-motion:reduce){
+  .screen.leaving,.screen.entering{animation:none !important;}
+}
+/* ---------- morph-orb transition bridge ---------- */
+#transitionOrb{
+  position:fixed;top:0;left:0;width:1px;height:1px;
+  border-radius:50%;pointer-events:none;z-index:500;
+  transform:translate(-50%,-50%) scale(0);
+  opacity:0;
+  background:radial-gradient(circle,
+    rgba(245,201,74,0.9) 0%,
+    rgba(214,83,109,0.55) 32%,
+    rgba(228,61,18,0.28) 55%,
+    rgba(228,61,18,0) 72%);
+  filter:blur(2px);
+  will-change:transform,opacity;
+}
+#transitionOrb::after{
+  content:'';position:absolute;top:50%;left:50%;width:14px;height:14px;
+  background:var(--cyan-soft);
+  clip-path:polygon(50% 0%,63% 37%,100% 50%,63% 63%,50% 100%,37% 63%,0% 50%,37% 37%);
+  transform:translate(-50%,-50%) rotate(0deg) scale(0);
+  opacity:0;box-shadow:0 0 18px 4px rgba(245,201,74,0.8);
+}
+#transitionOrb.bloom{
+  animation:orbBloom .82s cubic-bezier(.65,0,.35,1) forwards;
+}
+#transitionOrb.bloom::after{
+  animation:orbSparkle .82s cubic-bezier(.65,0,.35,1) forwards;
+}
+@keyframes orbBloom{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(0);}
+  38%{opacity:1;transform:translate(-50%,-50%) scale(1);}
+  50%{opacity:1;transform:translate(-50%,-50%) scale(1.06);}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1.7);}
+}
+@keyframes orbSparkle{
+  0%{opacity:0;transform:translate(-50%,-50%) rotate(0deg) scale(0);}
+  40%{opacity:1;transform:translate(-50%,-50%) rotate(70deg) scale(1);}
+  55%{opacity:1;transform:translate(-50%,-50%) rotate(100deg) scale(1.15);}
+  100%{opacity:0;transform:translate(-50%,-50%) rotate(160deg) scale(0.4);}
+}
+@media (prefers-reduced-motion:reduce){
+  #transitionOrb{display:none;}
+}
+
+.reveal{opacity:0;transform:translateY(28px);}
+.reveal.in-view{animation:revealUp .8s cubic-bezier(.16,.8,.24,1) forwards;}
+.reveal.settled{animation:none;opacity:1;transform:translateY(var(--py,0px));}
+@keyframes revealUp{to{opacity:1;transform:translateY(0);}}
+
+/* ---------- big scroll-triggered heading reveal (motion-graphics style) ---------- */
+.big-reveal{opacity:0;transform:translateY(70px) scale(0.86) rotate(-1.5deg);will-change:transform,opacity;}
+.big-reveal.in-view{animation:bigRevealIn 1s cubic-bezier(.16,1.1,.3,1) forwards;}
+.big-reveal.settled{animation:none;opacity:1;transform:translateY(var(--py,0px)) scale(1) rotate(0deg);}
+@keyframes bigRevealIn{
+  0%{opacity:0;transform:translateY(70px) scale(0.86) rotate(-1.5deg);}
+  60%{opacity:1;transform:translateY(-6px) scale(1.03) rotate(0.3deg);}
+  100%{opacity:1;transform:translateY(0) scale(1) rotate(0deg);}
+}
+.glass:not(.reveal), .badge, .hero-stats .stat, .btn-icon-circle{
+  transform:translateY(var(--py,0px));
+  transition:transform .12s linear, border-color .25s ease, background .25s ease, color .25s ease, box-shadow .35s ease;
+}
+.chip, .level-card, .mode-card{
+  transition:transform .25s cubic-bezier(.2,.8,.2,1), border-color .25s ease, background .25s ease, color .25s ease, box-shadow .35s ease;
+}
+.glass:not(.reveal):hover, .badge:hover, .hero-stats .stat:hover, .btn-icon-circle:hover, .nav-dot:hover{
+  transition:transform .3s cubic-bezier(.2,.8,.2,1), border-color .25s ease, background .25s ease, color .25s ease, box-shadow .35s ease;
+}
+
+/* ---------- glass card ---------- */
+.glass{
+  background:var(--glass);
+  border:1px solid var(--glass-border);
+  border-radius:20px;
+  backdrop-filter:blur(22px);
+  -webkit-backdrop-filter:blur(22px);
+  box-shadow:0 4px 28px -10px rgba(35,29,24,0.12);
+  position:relative;
+  overflow:hidden;
+  transition:transform .3s cubic-bezier(.2,.8,.2,1), border-color .25s ease, box-shadow .35s ease;
+}
+.glass::before{
+  content:'';position:absolute;inset:0;border-radius:inherit;padding:1px;
+  background:linear-gradient(135deg, rgba(245,201,74,0.25), rgba(214,83,109,0.05) 40%, transparent 70%);
+  -webkit-mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;
+  pointer-events:none;opacity:.7;
+}
+.glass:hover{border-color:var(--glass-border-hi);transform:translateY(var(--py,0px)) translateY(-6px) scale(1.015);box-shadow:0 16px 44px -14px rgba(35,29,24,0.2);}
+
+/* ---------- buttons ---------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font-family:var(--font-body);font-weight:600;font-size:0.92rem;
+  padding:14px 28px;border-radius:12px;border:none;cursor:pointer;
+  position:relative;overflow:hidden;transition:transform .25s cubic-bezier(.2,.8,.2,1);
+  letter-spacing:-0.01em;
+}
+.btn span{position:relative;z-index:2;}
+.btn-primary{
+  background:linear-gradient(135deg, var(--royal), var(--purple));
+  color:white;box-shadow:0 8px 30px -8px rgba(214,83,109,0.6);
+}
+.btn-primary:hover{box-shadow:0 12px 40px -6px rgba(214,83,109,0.85);}
+.btn-ghost{
+  background:rgba(35,29,24,0.04);
+  color:var(--grey-soft);
+  border:1px solid var(--glass-border);
+}
+.btn-ghost:hover{border-color:var(--glass-border-hi);color:var(--royal);}
+.ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,0.5);transform:scale(0);animation:rippleAnim .6s ease-out;pointer-events:none;}
+@keyframes rippleAnim{to{transform:scale(3);opacity:0;}}
+
+/* ================= SCREEN 1 — LANDING ================= */
+.hero{
+  display:flex;flex-direction:column;align-items:center;text-align:center;
+  padding-top:40px;
+}
+.eyebrow{
+  font-family:var(--font-mono);font-size:0.72rem;letter-spacing:0.18em;text-transform:uppercase;
+  color:var(--amber);display:flex;align-items:center;gap:8px;margin-bottom:22px;
+  padding:7px 16px;border:1px solid rgba(245,201,74,0.25);border-radius:999px;background:rgba(245,201,74,0.05);
+}
+.eyebrow .pulse{width:6px;height:6px;border-radius:50%;background:var(--cyan-soft);box-shadow:0 0 8px 2px var(--cyan-soft);animation:pulse 1.8s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+.hero h1{
+  font-size:clamp(2.6rem,6vw,5rem);line-height:1.02;max-width:960px;
+  background:linear-gradient(135deg,var(--white) 20%,var(--royal) 60%,var(--purple) 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+}
+.hero p.sub{
+  margin-top:26px;font-size:1.15rem;color:var(--grey-soft);max-width:600px;line-height:1.6;font-weight:400;
+}
+.hero-actions{display:flex;gap:16px;margin-top:40px;flex-wrap:wrap;justify-content:center;}
+.btn-icon-circle{
+  width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:rgba(35,29,24,0.06);border:1px solid var(--glass-border);
+  transition:all .3s cubic-bezier(.2,.8,.2,1);
+}
+.btn-icon-circle:hover{transform:scale(1.12) rotate(12deg);border-color:var(--glass-border-hi);background:rgba(228,61,18,0.08);}
+
+.features{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:100px;max-width:1080px;margin-left:auto;margin-right:auto;
+}
+@media (max-width:820px){.features{grid-template-columns:1fr;}}
+.feature-card{padding:30px 26px;transition:transform .4s cubic-bezier(.2,.8,.2,1);}
+.feature-card:hover{transform:translateY(var(--py,0px)) translateY(-10px) scale(1.02) rotate(-0.4deg);}
+.feature-card .ficon{
+  width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg, rgba(228,61,18,0.35), rgba(214,83,109,0.25));
+  font-size:1.3rem;margin-bottom:18px;
+}
+.feature-card h3{font-size:1.08rem;margin-bottom:8px;font-weight:600;}
+.feature-card p{color:var(--grey);font-size:0.92rem;line-height:1.55;}
+
+/* ================= FORM ELEMENTS (screens 2/3) ================= */
+.form-wrap{max-width:640px;margin:0 auto;}
+.form-card{padding:44px 40px;}
+.form-head{text-align:center;margin-bottom:38px;}
+.form-head h2{font-size:1.9rem;margin-bottom:10px;}
+.form-head p{color:var(--grey);font-size:0.95rem;}
+.field{margin-bottom:24px;}
+.field label{
+  display:block;font-size:0.78rem;font-weight:600;color:var(--grey-soft);
+  text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;
+}
+.field input[type=text],.field input[type=date],.field textarea{
+  width:100%;background:rgba(35,29,24,0.04);border:1px solid var(--glass-border);
+  border-radius:12px;padding:14px 16px;color:var(--white);font-size:0.96rem;
+  font-family:var(--font-body);transition:border-color .3s,box-shadow .3s;
+}
+.field textarea{resize:vertical;min-height:90px;}
+.field input:focus,.field textarea:focus{
+  outline:none;border-color:var(--cyan-soft);box-shadow:0 0 0 3px rgba(245,201,74,0.12);
+}
+.chip-row{display:flex;flex-wrap:wrap;gap:10px;}
+.chip{
+  padding:10px 18px;border-radius:999px;border:1px solid var(--glass-border);
+  background:rgba(35,29,24,0.03);color:var(--grey-soft);font-size:0.87rem;font-weight:500;
+  cursor:pointer;transition:all .25s cubic-bezier(.2,.8,.2,1);
+}
+.chip:hover{border-color:var(--glass-border-hi);color:var(--royal);transform:translateY(-2px) scale(1.03);}
+.chip.selected{
+  background:linear-gradient(135deg,var(--royal),var(--purple));
+  border-color:transparent;color:white;box-shadow:0 6px 20px -6px rgba(214,83,109,0.7);
+}
+.chip.chip-add{
+  border-style:dashed;background:transparent;color:var(--grey-soft);
+  display:inline-flex;align-items:center;gap:6px;
+}
+.chip.chip-add:hover{border-color:var(--cyan-soft);color:var(--cyan-soft);background:rgba(245,201,74,0.05);}
+.chip-add-input{
+  background:transparent;border:none;outline:none;color:var(--white);
+  font-family:var(--font-body);font-size:0.87rem;width:120px;padding:0;
+}
+.chip-add-input::placeholder{color:var(--grey-soft);}
+.level-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.level-card{
+  padding:18px 12px;text-align:center;border-radius:14px;border:1px solid var(--glass-border);
+  background:rgba(35,29,24,0.03);cursor:pointer;transition:all .25s cubic-bezier(.2,.8,.2,1);
+}
+.level-card:hover{transform:translateY(-3px) scale(1.02);border-color:var(--glass-border-hi);}
+.level-card .lvl-icon{font-size:1.4rem;margin-bottom:6px;}
+.level-card span{display:block;font-size:0.85rem;font-weight:600;color:var(--grey-soft);}
+.level-card.selected{border-color:var(--cyan-soft);background:rgba(245,201,74,0.08);box-shadow:0 0 0 1px rgba(245,201,74,0.3), 0 8px 24px -8px rgba(245,201,74,0.4);}
+.level-card.selected span{color:var(--white);}
+
+.mode-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media(max-width:560px){.mode-row{grid-template-columns:1fr;}}
+.mode-card{
+  padding:22px;border-radius:16px;border:1px solid var(--glass-border);
+  background:rgba(35,29,24,0.03);cursor:pointer;transition:all .25s cubic-bezier(.2,.8,.2,1);
+}
+.mode-card:hover{transform:translateY(-4px) scale(1.015);border-color:var(--glass-border-hi);}
+.mode-card h4{font-size:1rem;margin-bottom:6px;display:flex;align-items:center;gap:8px;}
+.mode-card p{font-size:0.82rem;color:var(--grey);line-height:1.5;}
+.mode-card.selected{border-color:var(--purple-2);background:rgba(214,83,109,0.1);box-shadow:0 0 0 1px rgba(214,83,109,0.35);}
+.radio-dot{width:16px;height:16px;border-radius:50%;border:2px solid var(--grey);flex-shrink:0;position:relative;}
+.mode-card.selected .radio-dot{border-color:var(--cyan-soft);}
+.mode-card.selected .radio-dot::after{content:'';position:absolute;inset:3px;border-radius:50%;background:var(--cyan-soft);}
+
+.form-actions{display:flex;justify-content:flex-end;margin-top:12px;gap:12px;}
+
+/* ================= SCREEN 4 — AI THINKING ================= */
+.thinking-wrap{
+  max-width:640px;margin:40px auto 0;display:flex;flex-direction:column;align-items:center;text-align:center;
+}
+.think-orb{
+  width:150px;height:150px;position:relative;margin-bottom:44px;
+}
+.think-orb canvas{width:100%;height:100%;}
+.thinking-wrap h2{font-size:1.7rem;margin-bottom:6px;}
+.thinking-wrap .status-text{color:var(--amber);font-family:var(--font-mono);font-size:0.88rem;margin-bottom:44px;min-height:20px;}
+.check-list{width:100%;display:flex;flex-direction:column;gap:12px;text-align:left;}
+.check-item{
+  display:flex;align-items:center;gap:14px;padding:14px 18px;border-radius:14px;
+  border:1px solid var(--glass-border);background:rgba(35,29,24,0.02);
+  opacity:0.35;transition:all .5s cubic-bezier(.2,.8,.2,1);
+}
+.check-item.active{opacity:1;border-color:rgba(245,201,74,0.25);background:rgba(245,201,74,0.04);}
+.check-item.done{opacity:1;}
+.check-box{
+  width:22px;height:22px;border-radius:7px;border:1.5px solid var(--grey);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .35s;
+}
+.check-item.done .check-box{background:linear-gradient(135deg,var(--cyan),var(--purple));border-color:transparent;}
+.check-box svg{width:12px;height:12px;opacity:0;transform:scale(.5);transition:all .3s;}
+.check-item.done .check-box svg{opacity:1;transform:scale(1);}
+.check-item span{font-size:0.92rem;color:var(--grey-soft);}
+.check-item.done span,.check-item.active span{color:var(--white);}
+.check-spinner{margin-left:auto;width:14px;height:14px;border-radius:50%;border:2px solid rgba(35,29,24,0.15);border-top-color:var(--cyan-soft);animation:spin .7s linear infinite;display:none;}
+.check-item.active .check-spinner{display:block;}
+.progress-track{width:100%;height:4px;border-radius:99px;background:rgba(35,29,24,0.06);margin-top:36px;overflow:hidden;}
+.progress-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--royal),var(--cyan));border-radius:99px;transition:width .4s linear;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ================= SCREEN 5 — DASHBOARD ================= */
+.dash-head{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px;margin-bottom:38px;max-width:1200px;margin-left:auto;margin-right:auto;}
+.dash-head h2{font-size:1.8rem;}
+.dash-head p{color:var(--grey);font-size:0.9rem;margin-top:6px;}
+.metric-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:18px;max-width:1200px;margin:0 auto;
+}
+@media(max-width:1000px){.metric-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:560px){.metric-grid{grid-template-columns:1fr;}}
+.metric-card{padding:26px 24px;min-height:150px;display:flex;flex-direction:column;justify-content:space-between;}
+.metric-card .m-top{display:flex;justify-content:space-between;align-items:flex-start;}
+.metric-card .m-icon{font-size:1.3rem;}
+.metric-card .m-label{font-size:0.76rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--grey);font-weight:600;}
+.metric-card .m-value{font-family:var(--font-display);font-size:2.1rem;margin-top:14px;font-weight:600;}
+.metric-card .m-value .unit{font-size:1.1rem;color:var(--grey);font-weight:400;margin-left:4px;}
+.metric-card .m-delta{font-size:0.8rem;margin-top:6px;font-weight:600;font-family:var(--font-mono);}
+.m-delta.up{color:var(--green);}
+.m-delta.down{color:var(--danger);}
+.m-delta.warn{color:var(--amber);}
+.gauge-wrap{display:flex;align-items:center;gap:16px;}
+.gauge-svg{width:64px;height:64px;flex-shrink:0;}
+
+/* ================= SCREEN 6 — RECOMMENDATIONS ================= */
+.rec-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;max-width:1200px;margin:0 auto 60px;}
+@media(max-width:900px){.rec-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:600px){.rec-grid{grid-template-columns:1fr;}}
+.rec-card{padding:24px;cursor:pointer;transition:transform .3s cubic-bezier(.2,.8,.2,1);}
+.rec-card:hover{transform:translateY(var(--py,0px)) translateY(-8px) scale(1.02) rotate(0.4deg);}
+.rec-card .r-icon{font-size:1.5rem;margin-bottom:14px;}
+.rec-card h4{font-size:1rem;margin-bottom:8px;}
+.rec-card p{font-size:0.85rem;color:var(--grey);line-height:1.5;margin-bottom:16px;}
+.rec-apply{
+  font-size:0.78rem;font-weight:600;color:var(--amber);display:inline-flex;align-items:center;gap:6px;
+  transition:transform .25s cubic-bezier(.2,.8,.2,1);
+}
+.rec-card:hover .rec-apply{transform:translateX(4px);}
+.rec-card.applied .rec-apply{color:var(--green);}
+
+.chat-card{max-width:640px;margin:0 auto;padding:0;overflow:hidden;}
+.chat-head{padding:20px 24px;border-bottom:1px solid var(--glass-border);display:flex;align-items:center;gap:12px;}
+.chat-head .ai-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--purple));display:flex;align-items:center;justify-content:center;font-size:1rem;}
+.chat-head h4{font-size:0.95rem;}
+.chat-head p{font-size:0.75rem;color:var(--green);}
+.chat-body{padding:24px;display:flex;flex-direction:column;gap:14px;min-height:220px;}
+.msg{max-width:80%;padding:12px 16px;border-radius:16px;font-size:0.9rem;line-height:1.5;opacity:0;transform:translateY(10px);animation:msgIn .5s cubic-bezier(.2,.8,.2,1) forwards;}
+@keyframes msgIn{to{opacity:1;transform:translateY(0);}}
+.msg.ai{align-self:flex-start;background:rgba(214,83,109,0.14);border:1px solid rgba(214,83,109,0.25);border-bottom-left-radius:4px;}
+.msg.user{align-self:flex-end;background:rgba(245,201,74,0.12);border:1px solid rgba(245,201,74,0.25);border-bottom-right-radius:4px;}
+.chat-input-row{display:flex;gap:10px;padding:18px 24px;border-top:1px solid var(--glass-border);}
+.chat-input-row input{flex:1;background:rgba(35,29,24,0.04);border:1px solid var(--glass-border);border-radius:10px;padding:11px 14px;color:var(--white);font-size:0.88rem;}
+.chat-input-row input:focus{outline:none;border-color:var(--cyan-soft);}
+.chat-send{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--royal),var(--purple));border:none;color:white;cursor:pointer;flex-shrink:0;transition:transform .25s cubic-bezier(.2,.8,.2,1);}
+.chat-send:hover{transform:scale(1.1) rotate(-8deg);}
+
+/* ================= SCREEN 7 — PERSONALIZED DASHBOARD ================= */
+.trend-grid{display:grid;grid-template-columns:2fr 1fr;gap:18px;max-width:1200px;margin:0 auto 22px;}
+@media(max-width:900px){.trend-grid{grid-template-columns:1fr;}}
+.trend-card{padding:24px;}
+.trend-card h4{font-size:0.95rem;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;}
+.trend-card h4 .tag{font-family:var(--font-mono);font-size:0.72rem;color:var(--amber);}
+.small-charts{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;max-width:1200px;margin:0 auto 40px;}
+@media(max-width:900px){.small-charts{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:560px){.small-charts{grid-template-columns:1fr;}}
+.small-chart-card{padding:20px;}
+.small-chart-card .sc-label{font-size:0.76rem;color:var(--grey);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;}
+.small-chart-card .sc-value{font-family:var(--font-display);font-size:1.5rem;margin-bottom:10px;}
+.alerts-col{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+@media(max-width:900px){.alerts-col{grid-template-columns:1fr;}}
+.alert-card{padding:20px 22px;display:flex;gap:14px;align-items:flex-start;}
+.alert-card .a-icon{font-size:1.3rem;flex-shrink:0;}
+.alert-card h5{font-size:0.9rem;margin-bottom:4px;}
+.alert-card p{font-size:0.82rem;color:var(--grey);line-height:1.5;}
+.alert-card.warn{border-color:rgba(217,151,26,0.3);}
+.alert-card.fire{border-color:rgba(228,72,61,0.3);}
+.alert-card.star{border-color:rgba(245,201,74,0.3);}
+
+/* ================= SCREEN 8 — CREATOR TWIN ================= */
+.twin-wrap{max-width:900px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;}
+@media(max-width:820px){.twin-wrap{grid-template-columns:1fr;}}
+.twin-intro .eyebrow{margin-bottom:20px;}
+.twin-intro h2{font-size:2.1rem;margin-bottom:18px;line-height:1.15;}
+.twin-intro p{color:var(--grey-soft);line-height:1.65;margin-bottom:18px;font-size:0.98rem;}
+.learn-list{list-style:none;display:flex;flex-direction:column;gap:10px;margin-top:22px;}
+.learn-list li{display:flex;align-items:center;gap:10px;font-size:0.9rem;color:var(--grey-soft);}
+.learn-list li::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--cyan-soft);box-shadow:0 0 6px 1px var(--cyan-soft);}
+
+.profile-card{padding:36px 32px;position:relative;}
+.profile-card .twin-orb{width:64px;height:64px;border-radius:50%;background:conic-gradient(from 180deg,var(--cyan),var(--purple),var(--royal),var(--cyan));margin:0 auto 18px;position:relative;animation:twinSpin 6s linear infinite;}
+.profile-card .twin-orb::after{content:'';position:absolute;inset:5px;border-radius:50%;background:var(--bg-navy-2);}
+@keyframes twinSpin{to{transform:rotate(360deg);}}
+.profile-card h3{text-align:center;font-size:1.15rem;margin-bottom:2px;}
+.profile-card .p-sub{text-align:center;color:var(--grey);font-size:0.82rem;margin-bottom:26px;}
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--glass-border);transition:transform .25s cubic-bezier(.2,.8,.2,1),padding-left .25s ease;}
+.stat-row:hover{transform:translateX(4px);}
+.stat-row:last-child{border-bottom:none;}
+.stat-row .s-label{font-size:0.86rem;color:var(--grey-soft);}
+.stars{color:var(--grey);letter-spacing:2px;font-size:0.95rem;}
+.stars .filled{color:var(--amber);text-shadow:0 0 8px rgba(245,201,74,0.6);}
+.badge{font-size:0.76rem;font-weight:700;padding:5px 12px;border-radius:999px;font-family:var(--font-mono);transition:transform .25s cubic-bezier(.2,.8,.2,1);}
+.badge:hover{transform:scale(1.08);}
+.badge.low{background:rgba(107,156,77,0.14);color:var(--green);border:1px solid rgba(107,156,77,0.3);}
+.badge.medium{background:rgba(217,151,26,0.14);color:var(--amber);border:1px solid rgba(217,151,26,0.3);}
+
+/* section title reused */
+.section-title{text-align:center;margin-bottom:8px;font-size:2rem;}
+.section-sub{text-align:center;color:var(--grey);margin-bottom:44px;font-size:0.95rem;}
+
+footer.screen-nav-buttons{display:flex;justify-content:center;gap:14px;margin-top:60px;}
+
+/* ================= HERO BRAND TITLE ================= */
+.brand-hero{
+  position:relative;font-size:clamp(3.4rem,11vw,8.2rem);line-height:0.92;
+  font-weight:700;letter-spacing:-0.035em;margin-bottom:8px;
+  background:linear-gradient(135deg,var(--white) 15%,var(--royal) 55%,var(--purple) 90%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 0 60px rgba(214,83,109,0.35));
+}
+.brand-hero .iq{
+  background:linear-gradient(135deg,var(--amber),var(--purple));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+}
+.hero-tagline{
+  font-family:var(--font-mono);font-size:clamp(0.78rem,1.6vw,0.98rem);letter-spacing:0.14em;
+  text-transform:uppercase;color:var(--amber);margin-top:6px;margin-bottom:2px;
+}
+.hero-stats{display:flex;gap:38px;justify-content:center;flex-wrap:wrap;margin-top:56px;}
+.hero-stats .stat{text-align:center;transition:transform .3s cubic-bezier(.2,.8,.2,1);}
+.hero-stats .stat:hover{transform:translateY(-4px) scale(1.06);}
+.hero-stats .stat .sv{font-family:var(--font-display);font-size:1.7rem;font-weight:700;
+  background:linear-gradient(135deg,var(--white),var(--royal));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.hero-stats .stat .sl{font-size:0.72rem;color:var(--grey);text-transform:uppercase;letter-spacing:0.08em;margin-top:4px;}
+.hero-stats .stat-div{width:1px;background:var(--glass-border);}
+
+/* ================= AMBIENT FLOATING PLATFORM ICONS ================= */
+/* ---------- decorative background logo layer (behind all content) ---------- */
+#bgLogos{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+.bg-logo{position:absolute;will-change:transform;}
+.bg-logo-spin{animation:bgLogoFloat var(--fdur,18s) ease-in-out infinite;animation-delay:var(--fdelay,0s);}
+.bg-logo svg{display:block;width:100%;height:100%;}
+@keyframes bgLogoFloat{
+  0%{transform:translate(0,0) rotate(0deg);}
+  50%{transform:translate(var(--fx,10px),var(--fy,-14px)) rotate(var(--fr,3deg));}
+  100%{transform:translate(0,0) rotate(0deg);}
+}
+@media (max-width:700px){
+  #bgLogos{opacity:0.5;}
+}
+
+#floatLayer{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden;}
+.float-icon{
+  position:absolute;bottom:-60px;width:34px;height:34px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(35,29,24,0.03);border:1px solid rgba(35,29,24,0.06);
+  backdrop-filter:blur(6px);opacity:0;
+  animation-name:floatUp;animation-timing-function:linear;animation-fill-mode:forwards;
+}
+.float-icon svg{width:16px;height:16px;opacity:0.8;}
+@keyframes floatUp{
+  0%{opacity:0;transform:translateY(0) scale(0.9);}
+  10%{opacity:var(--fi-op,0.16);}
+  85%{opacity:var(--fi-op,0.16);}
+  100%{opacity:0;transform:translateY(-115vh) scale(1.05);}
+}
+.readability-zone{position:relative;z-index:4;}
+@media (max-width:700px){ #floatLayer{opacity:0.6;} }
+
+/* ================= AUTH OVERLAY (SPLIT SCREEN) ================= */
+#authOverlay{
+  position:fixed;inset:0;z-index:200;display:flex;
+  opacity:0;pointer-events:none;transform:scale(1.02);
+  transition:opacity .55s cubic-bezier(.16,.8,.24,1), transform .55s cubic-bezier(.16,.8,.24,1);
+  background:var(--bg-void);
+}
+#authOverlay.open{opacity:1;pointer-events:auto;transform:scale(1);}
+.auth-left{
+  flex:1.1;position:relative;display:flex;flex-direction:column;justify-content:center;
+  padding:60px 64px;overflow:hidden;
+  background:
+    radial-gradient(ellipse 70% 60% at 20% 10%, rgba(228,61,18,0.35), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 90% 90%, rgba(214,83,109,0.28), transparent 55%),
+    linear-gradient(180deg, var(--bg-void), var(--bg-navy-2));
+  border-right:1px solid var(--glass-border);
+}
+.auth-left canvas{position:absolute;inset:0;width:100%;height:100%;opacity:0.6;}
+.auth-left-content{position:relative;z-index:2;max-width:440px;}
+.auth-left .abrand{
+  font-family:var(--font-display);font-weight:700;font-size:1.4rem;display:flex;align-items:center;gap:10px;margin-bottom:56px;letter-spacing:-0.01em;
+}
+.auth-left .abrand .dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,var(--cyan),var(--purple));box-shadow:0 0 14px 3px rgba(214,83,109,0.7);}
+.auth-left h2{font-size:clamp(1.9rem,3vw,2.6rem);line-height:1.15;margin-bottom:18px;}
+.auth-left p{color:var(--grey-soft);font-size:1rem;line-height:1.6;max-width:380px;}
+.auth-left .aq-list{margin-top:40px;display:flex;flex-direction:column;gap:14px;}
+.auth-left .aq-list li{list-style:none;display:flex;align-items:center;gap:12px;font-size:0.92rem;color:var(--grey-soft);}
+.auth-left .aq-list li .aq-dot{width:6px;height:6px;border-radius:50%;background:var(--cyan-soft);box-shadow:0 0 8px 2px var(--cyan-soft);flex-shrink:0;}
+.auth-close{
+  position:absolute;top:26px;right:32px;z-index:10;width:40px;height:40px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;background:rgba(35,29,24,0.05);
+  border:1px solid var(--glass-border);color:var(--grey-soft);cursor:pointer;font-size:1.1rem;
+  transition:all .25s ease;
+}
+.auth-close:hover{border-color:var(--glass-border-hi);color:var(--royal);background:rgba(35,29,24,0.1);}
+
+.auth-right{
+  flex:1;display:flex;align-items:center;justify-content:center;padding:40px;position:relative;
+  background:linear-gradient(180deg, var(--bg-navy) 0%, var(--bg-navy-2) 100%);
+}
+.auth-panel{width:100%;max-width:400px;}
+.auth-panel .aform{display:none;}
+.auth-panel .aform.active{display:block;animation:revealUp .5s cubic-bezier(.16,.8,.24,1);}
+.auth-panel h3{font-size:1.7rem;margin-bottom:8px;}
+.auth-panel .asub{color:var(--grey);font-size:0.92rem;margin-bottom:34px;}
+.afield{margin-bottom:20px;position:relative;}
+.afield label{display:block;font-size:0.76rem;font-weight:600;color:var(--grey-soft);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:9px;}
+.afield .input-wrap{position:relative;}
+.afield input{
+  width:100%;background:rgba(35,29,24,0.04);border:1px solid var(--glass-border);
+  border-radius:12px;padding:14px 16px;color:var(--white);font-size:0.95rem;font-family:var(--font-body);
+  transition:border-color .3s,box-shadow .3s;
+}
+.afield input:focus{outline:none;border-color:var(--cyan-soft);box-shadow:0 0 0 3px rgba(245,201,74,0.12);}
+.afield input.err{border-color:var(--danger);}
+.afield input.ok{border-color:var(--green);}
+.afield .toggle-vis{
+  position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;
+  color:var(--grey);font-size:0.78rem;font-family:var(--font-mono);letter-spacing:0.03em;
+  user-select:none;padding:4px;
+}
+.afield .toggle-vis:hover{color:var(--amber);}
+.afield .err-msg{
+  font-size:0.78rem;color:var(--danger);margin-top:7px;display:none;align-items:center;gap:6px;
+}
+.afield .err-msg.show{display:flex;}
+.pw-reqs{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+.pw-reqs .req{
+  font-size:0.7rem;padding:4px 10px;border-radius:999px;border:1px solid var(--glass-border);
+  color:var(--grey);font-family:var(--font-mono);transition:all .25s ease;
+}
+.pw-reqs .req.met{color:var(--green);border-color:rgba(107,156,77,0.35);background:rgba(107,156,77,0.08);}
+.pw-strength{height:4px;border-radius:99px;background:rgba(35,29,24,0.06);margin-top:12px;overflow:hidden;}
+.pw-strength .bar{height:100%;width:0%;border-radius:99px;transition:width .3s ease,background .3s ease;}
+.auth-submit{width:100%;justify-content:center;margin-top:6px;padding:15px;}
+.auth-switch{text-align:center;margin-top:26px;font-size:0.88rem;color:var(--grey);}
+.auth-switch a{color:var(--amber);font-weight:600;cursor:pointer;text-decoration:none;}
+.auth-switch a:hover{text-decoration:underline;}
+.auth-note{display:flex;align-items:center;gap:8px;margin-top:22px;font-size:0.76rem;color:var(--grey);font-family:var(--font-mono);}
+
+@media (max-width:900px){
+  #authOverlay{flex-direction:column;overflow-y:auto;}
+  .auth-left{flex:none;padding:44px 28px 34px;border-right:none;border-bottom:1px solid var(--glass-border);}
+  .auth-left .aq-list{display:none;}
+  .auth-right{flex:none;padding:36px 24px 60px;}
+  .auth-close{top:16px;right:16px;}
+}
+</style>
+</head>
+<body>
+
+<div id="cursor-glow"></div>
+<div id="transitionOrb"></div>
+<div id="cursor-dot"></div>
+<canvas id="particles"></canvas>
+
+<div id="bgLogos" aria-hidden="true">
+
+  <!-- Instagram — large, tilted, upper-left -->
+  <div class="bg-logo" data-sx="0.012" data-sy="-0.055" data-rot="0.010" data-base-rot="-9" data-base-w="380"
+       style="top:2%;left:-3%;width:380px;height:380px;opacity:0.11;color:var(--purple);filter:blur(0.5px);">
+    <div class="bg-logo-spin" style="--fx:9px;--fy:-13px;--fr:2.5deg;--fdur:19s;--fdelay:-2s;">
+      <svg viewBox="0 0 100 100">
+        <rect x="8" y="8" width="84" height="84" rx="26" fill="none" stroke="currentColor" stroke-width="6"/>
+        <circle cx="50" cy="50" r="21" fill="none" stroke="currentColor" stroke-width="6"/>
+        <circle cx="75" cy="25" r="6" fill="currentColor"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- YouTube — medium-large, upper-right -->
+  <div class="bg-logo" data-sx="-0.016" data-sy="-0.08" data-rot="-0.008" data-base-rot="6" data-base-w="260"
+       style="top:6%;right:-2%;width:260px;height:260px;opacity:0.09;color:var(--royal);filter:blur(1.5px);">
+    <div class="bg-logo-spin" style="--fx:-11px;--fy:10px;--fr:-3deg;--fdur:16s;--fdelay:-6s;">
+      <svg viewBox="0 0 100 100">
+        <rect x="6" y="20" width="88" height="60" rx="18" fill="none" stroke="currentColor" stroke-width="6"/>
+        <path d="M42 38 L70 50 L42 62 Z" fill="currentColor"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- TikTok — large, very faint, lower-left/middle -->
+  <div class="bg-logo" data-sx="0.02" data-sy="-0.03" data-rot="0.006" data-base-rot="-4" data-base-w="420"
+       style="top:56%;left:2%;width:420px;height:420px;opacity:0.055;color:var(--royal-2);filter:blur(2.5px);">
+    <div class="bg-logo-spin" style="--fx:12px;--fy:14px;--fr:2deg;--fdur:22s;--fdelay:-11s;">
+      <svg viewBox="0 0 100 100">
+        <path d="M62 10 C66 23 76 31 88 32 L88 49 C76 48 66 44 62 38 L62 68 C62 82 50 90 38 87 C26 84 20 70 26 59 C31 50 42 46 51 49 L51 63 C47 61 42 62 40 66 C38 70 40 75 45 76 C50 77 55 73 55 67 L55 10 Z" fill="currentColor"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- X — smaller, faint, lower-right -->
+  <div class="bg-logo" data-sx="-0.012" data-sy="-0.1" data-rot="0.014" data-base-rot="10" data-base-w="150"
+       style="top:80%;right:6%;width:150px;height:150px;opacity:0.07;color:var(--grey);filter:blur(0.5px);">
+    <div class="bg-logo-spin" style="--fx:-8px;--fy:-11px;--fr:4deg;--fdur:14s;--fdelay:-4s;">
+      <svg viewBox="0 0 100 100">
+        <path d="M16 16 L84 84 M84 16 L16 84" stroke="currentColor" stroke-width="11" stroke-linecap="round"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Partial cropped Instagram, right edge -->
+  <div class="bg-logo" data-sx="0.008" data-sy="-0.065" data-rot="-0.009" data-base-rot="-14" data-base-w="230"
+       style="top:36%;right:-9%;width:230px;height:230px;opacity:0.05;color:var(--cyan);filter:blur(3px);">
+    <div class="bg-logo-spin" style="--fx:7px;--fy:9px;--fr:-2.5deg;--fdur:20s;--fdelay:-8s;">
+      <svg viewBox="0 0 100 100">
+        <rect x="8" y="8" width="84" height="84" rx="26" fill="none" stroke="currentColor" stroke-width="6"/>
+        <circle cx="50" cy="50" r="21" fill="none" stroke="currentColor" stroke-width="6"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Partial cropped YouTube, bottom-left edge -->
+  <div class="bg-logo" data-sx="-0.02" data-sy="-0.045" data-rot="0.007" data-base-rot="-8" data-base-w="200"
+       style="bottom:-6%;left:12%;width:200px;height:200px;opacity:0.05;color:var(--purple-2);filter:blur(2px);">
+    <div class="bg-logo-spin" style="--fx:-9px;--fy:-8px;--fr:2.5deg;--fdur:17s;--fdelay:-13s;">
+      <svg viewBox="0 0 100 100">
+        <rect x="6" y="20" width="88" height="60" rx="18" fill="none" stroke="currentColor" stroke-width="6"/>
+        <path d="M42 38 L70 50 L42 62 Z" fill="currentColor"/>
+      </svg>
+    </div>
+  </div>
+
+</div>
+
+<div id="floatLayer"></div>
+<div class="nav-stepper" id="navStepper"></div>
+
+<div id="app">
+
+<!-- ============ SCREEN 1 — LANDING ============ -->
+<section class="screen active" id="screen-1">
+  <div class="hero">
+    <div class="eyebrow reveal"><span class="pulse"></span>Now learning from 40M+ creator data points</div>
+    <h1 class="brand-hero reveal big-reveal" style="animation-delay:.08s">Creator<span class="iq">IQ</span></h1>
+    <div class="hero-tagline reveal big-reveal" style="animation-delay:.14s">Creator Intelligence, Built to Predict</div>
+    <p class="sub reveal" style="animation-delay:.2s">The AI operating system that models how your next post performs before you record a single frame — then coaches you to a stronger one.</p>
+    <div class="hero-actions reveal" style="animation-delay:.28s">
+      <button class="btn btn-primary magnetic" id="getStartedBtn"><span>Get Started →</span></button>
+    </div>
+    <div class="hero-stats reveal" style="animation-delay:.34s">
+      <div class="stat"><div class="sv">40M+</div><div class="sl">Data Points</div></div>
+      <div class="stat-div"></div>
+      <div class="stat"><div class="sv">82%</div><div class="sl">Predictive Accuracy</div></div>
+      <div class="stat-div"></div>
+      <div class="stat"><div class="sv">3.1x</div><div class="sl">Avg. Growth Lift</div></div>
+    </div>
+
+  </div>
+
+  <div class="features">
+    <div class="feature-card glass reveal" style="animation-delay:.1s">
+      <div class="ficon">📈</div>
+      <h3>Predict before you post</h3>
+      <p>See expected views, engagement and follower lift for an idea before it costs you a single minute of editing.</p>
+    </div>
+    <div class="feature-card glass reveal" style="animation-delay:.2s">
+      <div class="ficon">🧠</div>
+      <h3>Learns your creative DNA</h3>
+      <p>Editing speed, hook style, best posting windows — CreatorIQ builds a living profile of how you actually create.</p>
+    </div>
+    <div class="feature-card glass reveal" style="animation-delay:.3s">
+      <div class="ficon">⚔️</div>
+      <h3>An AI that pushes back</h3>
+      <p>Switch on Competitive AI and get challenged on your hook, structure and CTA until the idea is actually strong.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SCREEN 2 — SIGN IN / PROFILE ============ -->
+<section class="screen" id="screen-2">
+  <div class="form-wrap">
+    <div class="form-card glass reveal">
+      <div class="form-head">
+        <h2>Build your Creator Profile</h2>
+        <p>CreatorIQ personalizes every prediction to how you specifically create — this only gets sharper over time.</p>
+      </div>
+
+      <div class="field">
+        <label>Your Name</label>
+        <input type="text" id="inpName" placeholder="e.g. Alex Rivera">
+      </div>
+      <div class="field">
+        <label>Creator Name / Handle</label>
+        <input type="text" id="inpHandle" placeholder="e.g. @alexcreates">
+      </div>
+      <div class="field">
+        <label>Platforms</label>
+        <div class="chip-row" data-group="platform" data-multi="true">
+          <div class="chip">Instagram</div><div class="chip">YouTube</div><div class="chip">TikTok</div><div class="chip">X</div>
+          <div class="chip chip-add">+ Add</div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Niche</label>
+        <div class="chip-row" data-group="niche" data-multi="true">
+          <div class="chip">Tech</div><div class="chip">Lifestyle</div><div class="chip">Fitness</div><div class="chip">Comedy</div><div class="chip">Education</div><div class="chip">Beauty</div>
+          <div class="chip chip-add">+ Add</div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-ghost magnetic" data-goto="1"><span>← Back</span></button>
+        <button class="btn btn-primary magnetic" data-goto="3"><span>Continue →</span></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SCREEN 3 — CONTENT INPUT ============ -->
+<section class="screen" id="screen-3">
+  <div class="form-wrap">
+    <div class="form-card glass reveal">
+      <div class="form-head">
+        <h2>What are we creating?</h2>
+        <p>Give CreatorIQ the brief — it'll model the outcome before you shoot a frame.</p>
+      </div>
+
+      <div class="field">
+        <label>Brand</label>
+        <input type="text" id="inpBrand" placeholder="e.g. Nike, or 'Personal / No Brand'">
+      </div>
+
+      <div class="field">
+        <label>How do you want to start?</label>
+        <div class="mode-row" data-group="ideasource">
+          <div class="mode-card selected" data-ideasource="own">
+            <h4><span class="radio-dot"></span>✍️ I already have an idea</h4>
+            <p>Type your own content idea directly.</p>
+          </div>
+          <div class="mode-card" data-ideasource="suggest">
+            <h4><span class="radio-dot"></span>💡 Suggest 3 ideas for me</h4>
+            <p>Tell CreatorIQ what you're creating for, and get 3 ready-made ideas to choose from.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="field" id="ownIdeaWrap">
+        <label>Content Idea</label>
+        <textarea id="inpIdea" placeholder="Describe the idea in a sentence or two..."></textarea>
+      </div>
+
+      <div class="field" id="suggestIdeaWrap" style="display:none;">
+        <label>What are you creating for?</label>
+        <input type="text" id="inpSuggestSubject" placeholder="e.g. Face wash, camera, gaming headset...">
+        <div class="form-actions" style="justify-content:flex-start;margin-top:12px;margin-bottom:0;">
+          <button type="button" class="btn btn-ghost magnetic" id="suggestIdeasBtn"><span>Suggest 3 Ideas ✦</span></button>
+        </div>
+        <div id="suggestedIdeasList" style="margin-top:16px;display:none;"></div>
+      </div>
+
+      <div class="field">
+        <label>Content Type</label>
+        <div class="chip-row" data-group="ctype" data-multi="true">
+          <div class="chip">Reel</div><div class="chip">Long-form Video</div><div class="chip">Short</div><div class="chip">Carousel Post</div><div class="chip">Live</div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Platform</label>
+        <div class="chip-row" data-group="platform2" data-multi="true">
+          <div class="chip">Instagram</div><div class="chip">YouTube</div><div class="chip">TikTok</div><div class="chip">X</div>
+          <div class="chip chip-add">+ Add</div>
+        </div>
+      </div>
+      <div class="field">
+        <label>AI Mode</label>
+        <div class="mode-row" data-group="aimode">
+          <div class="mode-card">
+            <h4><span class="radio-dot"></span>🧭 AI Mentor</h4>
+            <p>Supportive guidance. Gentle suggestions, encouragement, and clear next steps.</p>
+          </div>
+          <div class="mode-card">
+            <h4><span class="radio-dot"></span>⚔️ Competitive AI</h4>
+            <p>Challenges every choice you make until the idea can hold up against the algorithm.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-ghost magnetic" data-goto="2"><span>← Back</span></button>
+        <button class="btn btn-primary magnetic" id="generateBtn" data-goto="4"><span>Generate Prediction ✦</span></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SCREEN 4 — AI THINKING ============ -->
+<section class="screen" id="screen-4">
+  <div class="thinking-wrap">
+    <div class="think-orb"><canvas id="thinkCanvas" width="300" height="300"></canvas></div>
+    <h2 class="reveal big-reveal">CreatorIQ is thinking</h2>
+    <div class="status-text mono" id="statusText">Initializing model...</div>
+    <div class="check-list" id="checkList">
+      <div class="check-item" data-label="Historical Trends"><div class="check-box"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Historical Trends</span><div class="check-spinner"></div></div>
+      <div class="check-item" data-label="Brand Performance"><div class="check-box"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Brand Performance</span><div class="check-spinner"></div></div>
+      <div class="check-item" data-label="Audience Behaviour"><div class="check-box"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Audience Behaviour</span><div class="check-spinner"></div></div>
+      <div class="check-item" data-label="Engagement Prediction"><div class="check-box"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Engagement Prediction</span><div class="check-spinner"></div></div>
+      <div class="check-item" data-label="Time Debt Analysis"><div class="check-box"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Time Debt Analysis</span><div class="check-spinner"></div></div>
+      <div class="check-item" data-label="Creator Profile"><div class="check-box"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Creator Profile</span><div class="check-spinner"></div></div>
+      <div class="check-item" data-label="Posting Pattern"><div class="check-box"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span>Posting Pattern</span><div class="check-spinner"></div></div>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+</section>
+
+<!-- ============ SCREEN 5 — PREDICTION DASHBOARD ============ -->
+<section class="screen" id="screen-5">
+  <div class="dash-head">
+    <div>
+      <h2 class="reveal big-reveal">Prediction Dashboard</h2>
+      <p>Modeled from your creator profile, brand history and current audience behaviour.</p>
+    </div>
+    <button class="btn btn-primary magnetic" data-goto="6"><span>View AI Recommendations →</span></button>
+  </div>
+
+  <div class="metric-grid">
+    <div class="metric-card glass reveal">
+      <div class="m-top"><span class="m-label">Expected Views</span><span class="m-icon">📈</span></div>
+      <div class="m-value"><span class="counter" data-target="48200" data-suffix="">0</span></div>
+      <div class="m-delta up">↑ 23% vs your avg</div>
+    </div>
+    <div class="metric-card glass reveal" style="animation-delay:.05s">
+      <div class="m-top"><span class="m-label">Engagement</span><span class="m-icon">❤️</span></div>
+      <div class="m-value"><span class="counter" data-target="6.8" data-decimals="1" data-suffix="%">0</span></div>
+      <div class="m-delta up">↑ 1.4pt above niche avg</div>
+    </div>
+    <div class="metric-card glass reveal" style="animation-delay:.1s">
+      <div class="m-top"><span class="m-label">Follower Lift</span><span class="m-icon">👥</span></div>
+      <div class="m-value">+<span class="counter" data-target="312" data-suffix="">0</span></div>
+      <div class="m-delta up">↑ Strong for this format</div>
+    </div>
+    <div class="metric-card glass reveal" style="animation-delay:.15s">
+      <div class="m-top"><span class="m-label">Success Probability</span><span class="m-icon">📊</span></div>
+      <div class="gauge-wrap">
+        <svg class="gauge-svg" viewBox="0 0 64 64">
+          <circle cx="32" cy="32" r="27" fill="none" stroke="rgba(35,29,24,0.08)" stroke-width="6"/>
+          <circle class="gauge-arc" cx="32" cy="32" r="27" fill="none" stroke="url(#gaugeGrad)" stroke-width="6" stroke-linecap="round" stroke-dasharray="169.6" stroke-dashoffset="169.6" transform="rotate(-90 32 32)"/>
+          <defs><linearGradient id="gaugeGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#efb11d"/><stop offset="100%" stop-color="#d6536d"/></linearGradient></defs>
+        </svg>
+        <div class="m-value" style="font-size:1.6rem;"><span class="counter" data-target="82" data-suffix="%">0</span></div>
+      </div>
+    </div>
+
+    <div class="metric-card glass reveal" style="animation-delay:.2s">
+      <div class="m-top"><span class="m-label">Recording Time</span><span class="m-icon">🎙️</span></div>
+      <div class="m-value"><span class="counter" data-target="35" data-suffix="">0</span><span class="unit">min</span></div>
+      <div class="m-delta">Matches your usual pace</div>
+    </div>
+    <div class="metric-card glass reveal" style="animation-delay:.25s">
+      <div class="m-top"><span class="m-label">Editing Time</span><span class="m-icon">🎬</span></div>
+      <div class="m-value"><span class="counter" data-target="110" data-suffix="">0</span><span class="unit">min</span></div>
+      <div class="m-delta warn">↑ Above your weekly budget</div>
+    </div>
+    <div class="metric-card glass reveal" style="animation-delay:.3s">
+      <div class="m-top"><span class="m-label">Time Debt</span><span class="m-icon">🔥</span></div>
+      <div class="m-value"><span class="counter" data-target="2.4" data-decimals="1" data-suffix="h">0</span></div>
+      <div class="m-delta warn">Owed from last 3 posts</div>
+    </div>
+    <div class="metric-card glass reveal" style="animation-delay:.35s">
+      <div class="m-top"><span class="m-label">Opportunity Score</span><span class="m-icon">⭐</span></div>
+      <div class="m-value"><span class="counter" data-target="91" data-suffix="">0</span><span class="unit">/100</span></div>
+      <div class="m-delta up">Top 8% of your ideas</div>
+    </div>
+  </div>
+
+  <!-- CreatorIQ backend analysis results -->
+
+<!-- CreatorIQ backend analysis results -->
+<div class="metric-card glass" id="backendAnalysisCard"
+     style="max-width:1200px;width:100%;margin:28px auto;min-height:0;gap:20px;padding:28px;">
+
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+    <div>
+      <p style="color:var(--grey);font-size:.75rem;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">
+        YOUR CREATORIQ RESULTS
+      </p>
+      <h3 style="font-size:1.6rem;margin:0;">Your Content Blueprint</h3>
+      <p style="color:var(--grey);font-size:.9rem;margin-top:8px;">
+        A starting point for planning your next piece of content.
+      </p>
+    </div>
+    <span style="font-size:.8rem;padding:8px 12px;border:1px solid var(--border,rgba(128,128,128,.25));border-radius:999px;">
+      ✦ AI-assisted analysis
+    </span>
+  </div>
+
+  <div style="padding:22px;border-radius:16px;background:rgba(245,201,74,.09);border:1px solid rgba(245,201,74,.35);">
+    <p style="font-size:.75rem;color:var(--grey);text-transform:uppercase;letter-spacing:1.2px;margin:0 0 12px;">
+      01 / Opening hook
+    </p>
+    <h4 style="font-size:1.1rem;margin:0 0 10px;">Grab attention in the first few seconds</h4>
+    <p id="apiHook" style="font-size:1.05rem;line-height:1.7;margin:0;">
+      Your hook suggestion will appear here.
+    </p>
+  </div>
+
+  <div style="padding:22px;border-radius:16px;border:1px solid var(--border,rgba(128,128,128,.25));">
+    <p style="font-size:.75rem;color:var(--grey);text-transform:uppercase;letter-spacing:1.2px;margin:0 0 12px;">
+      02 / Content plan
+    </p>
+    <h4 style="font-size:1.1rem;margin:0 0 14px;">Build your story step by step</h4>
+    <ul id="apiStructure" style="padding-left:22px;margin:0;line-height:1.9;">
+      <li>Your content outline will appear here.</li>
+    </ul>
+  </div>
+
+  <div style="padding:22px;border-radius:16px;background:rgba(128,128,128,.06);border:1px solid var(--border,rgba(128,128,128,.2));">
+    <p style="font-size:.75rem;color:var(--grey);text-transform:uppercase;letter-spacing:1.2px;margin:0 0 12px;">
+      03 / Production planner
+    </p>
+    <h4 style="font-size:1.1rem;margin:0 0 14px;">Estimated production time</h4>
+    <p id="apiProductionTime" style="font-size:2rem;font-weight:700;margin:0 0 8px;">
+      Not estimated yet.
+    </p>
+    <p id="apiEstimateNote" style="color:var(--grey);font-size:.85rem;line-height:1.6;margin:0;">
+    </p>
+  </div>
+
+  <p id="apiMeta" style="color:var(--grey);font-size:.8rem;line-height:1.6;margin:0;"></p>
+  <p id="apiError" role="alert" style="color:#c93223;font-size:.9rem;margin:0;"></p>
+
+  <p style="font-size:.75rem;color:var(--grey);line-height:1.6;margin:0;">
+    Production time is an estimate, not a guarantee. Review the suggestions and adapt them to your audience and creative style.
+  </p>
+</div>
+
+
+</section>
+
+<!-- ============ SCREEN 6 — AI RECOMMENDATIONS ============ -->
+<section class="screen" id="screen-6">
+  <h2 class="section-title reveal big-reveal">AI Suggestions</h2>
+  <p class="section-sub">Small changes CreatorIQ predicts will move the outcome most.</p>
+
+  <div class="rec-grid">
+    <div class="rec-card glass" data-rec>
+      <div class="r-icon">🪝</div><h4>Better Hook</h4>
+      <p>Open on the result, not the process — "This saved me 4 hours" beats "Let me show you my workflow."</p>
+      <div class="rec-apply">Apply suggestion →</div>
+    </div>
+    <div class="rec-card glass" data-rec>
+      <div class="r-icon">✍️</div><h4>Better Caption</h4>
+      <p>Lead with a question in the first line to lift comment rate; save the CTA for the final line.</p>
+      <div class="rec-apply">Apply suggestion →</div>
+    </div>
+    <div class="rec-card glass" data-rec>
+      <div class="r-icon">🖼️</div><h4>Better Thumbnail</h4>
+      <p>High-contrast face + 3-word overlay text outperforms your last 6 thumbnails by a wide margin.</p>
+      <div class="rec-apply">Apply suggestion →</div>
+    </div>
+    <div class="rec-card glass" data-rec>
+      <div class="r-icon">🧩</div><h4>Better Structure</h4>
+      <p>Cut the intro to 3 seconds. Your retention graph consistently drops before second 4.</p>
+      <div class="rec-apply">Apply suggestion →</div>
+    </div>
+    <div class="rec-card glass" data-rec>
+      <div class="r-icon">⏰</div><h4>Better Posting Time</h4>
+      <p>Your audience is most active 7:15–8:00pm local — 40 min later than your usual posting slot.</p>
+      <div class="rec-apply">Apply suggestion →</div>
+    </div>
+    <div class="rec-card glass" data-rec>
+      <div class="r-icon">🎯</div><h4>Better CTA</h4>
+      <p>Swap "Follow for more" for a specific save-prompt — save rate is your strongest growth lever right now.</p>
+      <div class="rec-apply">Apply suggestion →</div>
+    </div>
+  </div>
+
+  <h2 class="section-title reveal big-reveal">Competitive AI Chat</h2>
+  <p class="section-sub">The AI mode you selected pushes your idea until it's sharper.</p>
+
+  <div class="chat-card glass">
+    <div class="chat-head">
+      <div class="ai-avatar">⚔️</div>
+      <div><h4>Competitive AI</h4><p>● Active — Competitive Mode</p></div>
+    </div>
+    <div class="chat-body" id="chatBody"></div>
+    <div class="chat-input-row">
+      <input type="text" id="chatInput" placeholder="Type a reply and hit send...">
+      <button class="chat-send" id="chatSendBtn">→</button>
+    </div>
+  </div>
+
+  <footer class="screen-nav-buttons">
+    <button class="btn btn-ghost magnetic" data-goto="5"><span>← Back to Dashboard</span></button>
+    <button class="btn btn-primary magnetic" data-goto="7"><span>See Long-Term Growth →</span></button>
+  </footer>
+</section>
+
+<!-- ============ SCREEN 7 — PERSONALIZED DASHBOARD ============ -->
+<section class="screen" id="screen-7">
+  <div class="dash-head">
+    <div>
+      <h2 class="reveal big-reveal">Your Growth, Week 6</h2>
+      <p>CreatorIQ has been learning from your last 14 posts.</p>
+    </div>
+  </div>
+
+  <div class="trend-grid">
+    <div class="trend-card glass">
+      <h4>Growth <span class="tag">+18.4% / 30d</span></h4>
+      <svg viewBox="0 0 500 160" width="100%" height="160"><polyline id="growthLine" fill="none" stroke="url(#lineGrad)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points=""/><defs><linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#efb11d"/><stop offset="100%" stop-color="#d6536d"/></linearGradient></defs></svg>
+    </div>
+    <div class="trend-card glass">
+      <h4>Time Debt Trend <span class="tag">-31%</span></h4>
+      <svg viewBox="0 0 220 160" width="100%" height="160"><polyline id="debtLine" fill="none" stroke="#d9971a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points=""/></svg>
+    </div>
+  </div>
+
+  <div class="small-charts">
+    <div class="small-chart-card glass">
+      <div class="sc-label">Posting Consistency</div>
+      <div class="sc-value">86%</div>
+      <svg viewBox="0 0 150 40" width="100%" height="40"><polyline points="0,30 20,25 40,28 60,15 80,20 100,10 120,14 150,6" fill="none" stroke="#f5c94a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="small-chart-card glass">
+      <div class="sc-label">Productivity</div>
+      <div class="sc-value">+27%</div>
+      <svg viewBox="0 0 150 40" width="100%" height="40"><polyline points="0,32 20,29 40,24 60,26 80,18 100,20 120,9 150,12" fill="none" stroke="#ffa2b6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="small-chart-card glass">
+      <div class="sc-label">Engagement History</div>
+      <div class="sc-value">6.2% avg</div>
+      <svg viewBox="0 0 150 40" width="100%" height="40"><polyline points="0,20 20,24 40,18 60,22 80,14 100,17 120,11 150,8" fill="none" stroke="#6b9c4d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="small-chart-card glass">
+      <div class="sc-label">Opportunity Captured</div>
+      <div class="sc-value">73%</div>
+      <svg viewBox="0 0 150 40" width="100%" height="40"><polyline points="0,28 20,26 40,22 60,24 80,16 100,18 120,13 150,10" fill="none" stroke="#e43d12" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+  </div>
+
+  <h2 class="section-title reveal big-reveal" style="font-size:1.4rem;">AI Alerts</h2>
+  <div class="alerts-col">
+    <div class="alert-card glass warn">
+      <div class="a-icon">⚠️</div>
+      <div><h5>You haven't posted in 5 days</h5><p>Estimated engagement may decrease by 12% if this continues past this week.</p></div>
+    </div>
+    <div class="alert-card glass fire">
+      <div class="a-icon">🔥</div>
+      <div><h5>Today is your best posting day</h5><p>Thursdays outperform your weekly average by 34% based on the last 8 weeks.</p></div>
+    </div>
+    <div class="alert-card glass star">
+      <div class="a-icon">⭐</div>
+      <div><h5>Tutorials are outperforming Reviews</h5><p>Tutorial videos have performed 23% better than Reviews recently — worth leaning in.</p></div>
+    </div>
+  </div>
+
+  <footer class="screen-nav-buttons">
+    <button class="btn btn-primary magnetic" data-goto="8"><span>Meet Your Creator Twin →</span></button>
+  </footer>
+</section>
+
+<!-- ============ SCREEN 8 — CREATOR TWIN (BONUS) ============ -->
+<section class="screen" id="screen-8">
+  <div class="twin-wrap">
+    <div class="twin-intro">
+      <div class="eyebrow"><span class="pulse"></span>Bonus — Experimental</div>
+      <h2 class="reveal big-reveal">Meet your Creator Twin.</h2>
+      <p>CreatorIQ quietly builds a living model of exactly how <em>you</em> create — not a generic creator archetype, but your own patterns, distilled.</p>
+      <p>It learns:</p>
+      <ul class="learn-list">
+        <li>Your editing speed</li>
+        <li>Your recording speed</li>
+        <li>Your audience's real behaviour</li>
+        <li>Your best-performing hooks</li>
+        <li>Your best posting times</li>
+        <li>Your brand-fit preferences</li>
+      </ul>
+    </div>
+
+    <div class="profile-card glass">
+      <div class="twin-orb"></div>
+      <h3>Your Creator Profile</h3>
+      <div class="p-sub">Confidence: 87% · Updated Today</div>
+
+      <div class="stat-row"><span class="s-label">Editing Speed</span><span class="stars"><span class="filled">★★★★</span>☆</span></div>
+      <div class="stat-row"><span class="s-label">Creativity</span><span class="stars"><span class="filled">★★★★★</span></span></div>
+      <div class="stat-row"><span class="s-label">Consistency</span><span class="stars"><span class="filled">★★★</span>☆☆</span></div>
+      <div class="stat-row"><span class="s-label">Time Debt</span><span class="badge low">LOW</span></div>
+      <div class="stat-row"><span class="s-label">Risk of Burnout</span><span class="badge medium">MEDIUM</span></div>
+    </div>
+  </div>
+
+  <footer class="screen-nav-buttons">
+    <button class="btn btn-ghost magnetic" data-goto="1"><span>↺ Restart Tour</span></button>
+  </footer>
+</section>
+
+</div>
+
+<!-- ============ AUTH OVERLAY — SPLIT SCREEN ============ -->
+<div id="authOverlay">
+  <div class="auth-close" id="authCloseBtn">✕</div>
+  <div class="auth-left">
+    <canvas id="authOrbit"></canvas>
+    <div class="auth-left-content">
+      <div class="abrand"><div class="dot"></div>CreatorIQ</div>
+      <h2>Your creative decisions, modeled before you make them.</h2>
+      <p>Sign in to pick up where your Creator Profile left off, or create one in under a minute — CreatorIQ starts learning your patterns immediately.</p>
+      <ul class="aq-list">
+        <li><span class="aq-dot"></span>Predicts performance before you post</li>
+        <li><span class="aq-dot"></span>Builds a living model of how you create</li>
+        <li><span class="aq-dot"></span>Coaches every hook, caption and cut</li>
+      </ul>
+    </div>
+  </div>
+  <div class="auth-right">
+    <div class="auth-panel">
+
+      <!-- LOGIN -->
+      <form class="aform active" id="loginForm" novalidate>
+        <h3>Welcome back</h3>
+        <p class="asub">Log in to continue to your dashboard.</p>
+
+        <div class="afield">
+          <label>Email</label>
+          <div class="input-wrap">
+            <input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email">
+          </div>
+          <div class="err-msg" id="loginEmailErr"><span>⚠</span><span>Enter a valid email address.</span></div>
+        </div>
+
+        <div class="afield">
+          <label>Password</label>
+          <div class="input-wrap">
+            <input type="password" id="loginPassword" placeholder="Enter your password" autocomplete="current-password">
+            <span class="toggle-vis" data-target="loginPassword">SHOW</span>
+          </div>
+          <div class="err-msg" id="loginPasswordErr"><span>⚠</span><span>Password is required.</span></div>
+        </div>
+
+        <div class="err-msg" id="loginAccountErr" style="margin-top:-8px;margin-bottom:16px;"><span>⚠</span><span>Account not found. Please check your email or sign up.</span></div>
+
+        <button type="submit" class="btn btn-primary magnetic auth-submit"><span>Log In →</span></button>
+        <div class="auth-switch">Not registered? <a id="toSignup">Create an account</a></div>
+      </form>
+
+      <!-- SIGN UP -->
+      <form class="aform" id="signupForm" novalidate>
+        <h3>Create your account</h3>
+        <p class="asub">Set up CreatorIQ in under a minute.</p>
+
+        <div class="afield">
+          <label>Name</label>
+          <div class="input-wrap">
+            <input type="text" id="suName" placeholder="Your full name" autocomplete="name">
+          </div>
+          <div class="err-msg" id="suNameErr"><span>⚠</span><span>Enter your name.</span></div>
+        </div>
+
+        <div class="afield">
+          <label>Email</label>
+          <div class="input-wrap">
+            <input type="email" id="suEmail" placeholder="you@example.com" autocomplete="email">
+          </div>
+          <div class="err-msg" id="suEmailErr"><span>⚠</span><span>Enter a valid email address.</span></div>
+        </div>
+
+        <div class="afield">
+          <label>Password</label>
+          <div class="input-wrap">
+            <input type="password" id="suPassword" placeholder="Create a password" autocomplete="new-password">
+            <span class="toggle-vis" data-target="suPassword">SHOW</span>
+          </div>
+          <div class="pw-reqs" id="pwReqs">
+            <span class="req" data-req="len">8+ characters</span>
+            <span class="req" data-req="upper">Uppercase</span>
+            <span class="req" data-req="num">Number</span>
+            <span class="req" data-req="special">Symbol</span>
+          </div>
+          <div class="pw-strength"><div class="bar" id="pwStrengthBar"></div></div>
+          <div class="err-msg" id="suPasswordErr"><span>⚠</span><span>Password does not meet requirements.</span></div>
+        </div>
+
+        <div class="afield">
+          <label>Re-enter Password</label>
+          <div class="input-wrap">
+            <input type="password" id="suPassword2" placeholder="Repeat your password" autocomplete="new-password">
+            <span class="toggle-vis" data-target="suPassword2">SHOW</span>
+          </div>
+          <div class="err-msg" id="suPassword2Err"><span>⚠</span><span>Passwords do not match.</span></div>
+        </div>
+
+        <button type="submit" class="btn btn-primary magnetic auth-submit"><span>Create Account →</span></button>
+        <div class="auth-switch">Already have an account? <a id="toLogin">Login</a></div>
+      </form>
+
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============ MOTION PREFERENCES (used across cursor, transitions, tilt) ============ */
+const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const supportsFineHover = window.matchMedia && window.matchMedia('(hover:hover) and (pointer:fine)').matches;
+
+/* ============ CURSOR GLOW ============ */
+const glow=document.getElementById('cursor-glow'), dot=document.getElementById('cursor-dot');
+let mx=innerWidth/2,my=innerHeight/2,gx=mx,gy=my;
+window.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;dot.style.left=mx+'px';dot.style.top=my+'px';});
+(function loop(){gx+=(mx-gx)*0.09;gy+=(my-gy)*0.09;glow.style.left=gx+'px';glow.style.top=gy+'px';requestAnimationFrame(loop);})();
+document.querySelectorAll('button,.chip,.level-card,.mode-card,.rec-card,a').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{dot.style.width='22px';dot.style.height='22px';dot.style.background='rgba(245,201,74,0.5)';});
+  el.addEventListener('mouseleave',()=>{dot.style.width='8px';dot.style.height='8px';dot.style.background='var(--cyan-soft)';});
+});
+
+/* ============ PARTICLE FIELD ============ */
+const canvas=document.getElementById('particles'), ctx=canvas.getContext('2d');
+let W,H,particles=[];
+function resize(){W=canvas.width=innerWidth;H=canvas.height=innerHeight;}
+resize();window.addEventListener('resize',resize);
+const colors=['rgba(245,201,74,','rgba(214,83,109,','rgba(228,61,18,'];
+for(let i=0;i<70;i++){particles.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.6+0.4,vx:(Math.random()-0.5)*0.15,vy:(Math.random()-0.5)*0.15,c:colors[i%3],a:Math.random()*0.5+0.15});}
+function drawParticles(){
+  ctx.clearRect(0,0,W,H);
+  particles.forEach(p=>{
+    p.x+=p.vx;p.y+=p.vy;
+    if(p.x<0)p.x=W;if(p.x>W)p.x=0;if(p.y<0)p.y=H;if(p.y>H)p.y=0;
+    ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=p.c+p.a+')';ctx.fill();
+  });
+  requestAnimationFrame(drawParticles);
+}
+drawParticles();
+
+/* ============ MAGNETIC BUTTONS + RIPPLE ============ */
+document.querySelectorAll('.magnetic').forEach(btn=>{
+  btn.addEventListener('mousemove',e=>{
+    const r=btn.getBoundingClientRect();
+    const relX=e.clientX-r.left-r.width/2, relY=e.clientY-r.top-r.height/2;
+    btn.style.transform=`translate(${relX*0.18}px, ${relY*0.28}px)`;
+  });
+  btn.addEventListener('mouseleave',()=>{btn.style.transform='translate(0,0)';});
+  btn.addEventListener('click',function(e){
+    const r=this.getBoundingClientRect();
+    const ripple=document.createElement('span');
+    ripple.className='ripple';
+    ripple.style.left=(e.clientX-r.left)+'px';
+    ripple.style.top=(e.clientY-r.top)+'px';
+    ripple.style.width=ripple.style.height='10px';
+    this.appendChild(ripple);
+    setTimeout(()=>ripple.remove(),650);
+  });
+});
+
+/* ============ 3D TILT MICRO-INTERACTION ON CARDS (desktop/mouse only) ============ */
+if(supportsFineHover && !reduceMotion){
+  const tiltSelector = '.feature-card.glass, .form-card.glass, .metric-card.glass, .rec-card.glass, '+
+    '.profile-card.glass, .trend-card.glass, .small-chart-card.glass, .alert-card.glass, .chat-card.glass';
+  document.querySelectorAll(tiltSelector).forEach(card=>{
+    let rafId=null, tRX=0, tRY=0, tLift=0, cRX=0, cRY=0, cLift=0;
+    function step(){
+      cRX += (tRX-cRX)*0.18;
+      cRY += (tRY-cRY)*0.18;
+      cLift += (tLift-cLift)*0.18;
+      if(Math.abs(tRX-cRX)<0.05) cRX=tRX;
+      if(Math.abs(tRY-cRY)<0.05) cRY=tRY;
+      if(Math.abs(tLift-cLift)<0.01) cLift=tLift;
+      const settled = cRX===tRX && cRY===tRY && cLift===tLift;
+      if(settled && tLift===0){
+        card.style.transform=''; // fully at rest: hand control back to CSS/parallax
+        rafId=null;
+        return;
+      }
+      const ty = -6*cLift, sc = 1+0.015*cLift;
+      card.style.transform = `perspective(1000px) rotateX(${cRX.toFixed(2)}deg) rotateY(${cRY.toFixed(2)}deg) translateY(${ty.toFixed(2)}px) scale(${sc.toFixed(3)})`;
+      rafId = settled ? null : requestAnimationFrame(step);
+    }
+    card.addEventListener('mousemove', e=>{
+      const r = card.getBoundingClientRect();
+      const px = (e.clientX - r.left)/r.width - 0.5;
+      const py = (e.clientY - r.top)/r.height - 0.5;
+      tRY = px*7; tRX = -py*7; tLift = 1;
+      if(!rafId) rafId = requestAnimationFrame(step);
+    });
+    card.addEventListener('mouseleave', ()=>{
+      tRX=0; tRY=0; tLift=0;
+      if(!rafId) rafId = requestAnimationFrame(step);
+    });
+  });
+}
+
+/* ============ SCREEN NAVIGATION ============ */
+const totalScreens=8;
+let currentScreen=1;
+let authOpen=false;
+const stepper=document.getElementById('navStepper');
+for(let i=1;i<=totalScreens;i++){
+  const d=document.createElement('div');
+  d.className='nav-dot'+(i===1?' active':'');
+  d.dataset.screen=i;
+  d.addEventListener('click',(e)=>{ lastInteraction={x:e.clientX,y:e.clientY}; goTo(i); });
+  stepper.appendChild(d);
+}
+const transitionOrb = document.getElementById('transitionOrb');
+let isTransitioning = false;
+let lastInteraction = null; // {x,y} viewport coords of the click that triggered navigation
+
+function runOrbTransition(originX, originY){
+  return new Promise(resolve=>{
+    if(reduceMotion){ resolve(); return; }
+    const diag = Math.hypot(window.innerWidth, window.innerHeight);
+    const size = diag * 1.15; // base orb diameter, further scaled by keyframes to guarantee full coverage
+    transitionOrb.style.width = size+'px';
+    transitionOrb.style.height = size+'px';
+    transitionOrb.style.left = originX+'px';
+    transitionOrb.style.top = originY+'px';
+    transitionOrb.classList.remove('bloom');
+    // force reflow so the animation restarts cleanly
+    void transitionOrb.offsetWidth;
+    transitionOrb.classList.add('bloom');
+    // resolve at the visual mid-point of the bloom (when it's fully opaque, ~40% through)
+    setTimeout(resolve, 380);
+    setTimeout(()=>transitionOrb.classList.remove('bloom'), 900);
+  });
+}
+
+function goTo(n){
+  if(isTransitioning || n===currentScreen) return;
+  isTransitioning = true;
+  const fromEl = document.getElementById('screen-'+currentScreen);
+  const toEl = document.getElementById('screen-'+n);
+  const origin = lastInteraction || {x: window.innerWidth/2, y: window.innerHeight/2};
+  lastInteraction = null;
+
+  document.querySelectorAll('.nav-dot').forEach(d=>d.classList.toggle('active',+d.dataset.screen===n));
+
+  const orbPromise = runOrbTransition(origin.x, origin.y);
+
+  if(reduceMotion){
+    fromEl.classList.remove('active');
+    toEl.classList.add('active');
+    finishScreenSwap();
+  } else {
+    fromEl.classList.add('leaving');
+    fromEl.classList.remove('active');
+    orbPromise.then(()=>{
+      fromEl.classList.remove('leaving');
+      toEl.classList.add('active','entering');
+      finishScreenSwap();
+      setTimeout(()=>toEl.classList.remove('entering'), 700);
+    });
+  }
+
+  function finishScreenSwap(){
+    currentScreen=n;
+    window.scrollTo(0,0);
+    retriggerReveals(n);
+    if(typeof updateStepperVisibility==='function') updateStepperVisibility();
+    if(n===4) runThinkingSequence();
+    if(n===5) animateCounters();
+    if(n===6) startChatDemo();
+    if(n===7) drawTrendLines();
+    setTimeout(()=>{ isTransitioning = false; }, reduceMotion ? 0 : 520);
+  }
+}
+document.querySelectorAll('[data-goto]').forEach(el=>{
+  el.addEventListener('click',(e)=>{ lastInteraction={x:e.clientX,y:e.clientY}; goTo(+el.dataset.goto); });
+});
+function retriggerReveals(n){
+  document.querySelectorAll('#screen-'+n+' .reveal').forEach(el=>{
+    el.classList.remove('in-view','settled');
+    el.style.removeProperty('--py');
+  });
+}
+
+/* ============ SCROLL-BASED REVEAL + PARALLAX (applies across every screen) ============ */
+const scrollRevealObserver=new IntersectionObserver((entries)=>{
+  entries.forEach(entry=>{
+    if(entry.isIntersecting){
+      entry.target.classList.add('in-view');
+    }
+  });
+},{threshold:0.12,rootMargin:'0px 0px -40px 0px'});
+document.querySelectorAll('.reveal').forEach(el=>{
+  scrollRevealObserver.observe(el);
+  el.addEventListener('animationend',()=>el.classList.add('settled'));
+});
+
+const parallaxEls=Array.from(document.querySelectorAll(
+  '.reveal, .glass, .badge, .hero-stats .stat, .btn-icon-circle'
+));
+parallaxEls.forEach((el,i)=>{
+  el.dataset.speed=(0.015+(i%7)*0.012).toFixed(3);
+});
+const bgLogoEls=Array.from(document.querySelectorAll('.bg-logo'));
+let parallaxTicking=false;
+function updateParallax(){
+  const y=window.scrollY;
+  parallaxEls.forEach(el=>{
+    const speed=parseFloat(el.dataset.speed||0);
+    el.style.setProperty('--py',(-(y*speed)).toFixed(2)+'px');
+  });
+  bgLogoEls.forEach(el=>{
+    const sx=parseFloat(el.dataset.sx||0), sy=parseFloat(el.dataset.sy||0), rot=parseFloat(el.dataset.rot||0);
+    const baseRot=parseFloat(el.dataset.baseRot||0);
+    const tx=(y*sx).toFixed(2), ty=(y*sy).toFixed(2), tr=(baseRot+y*rot).toFixed(2);
+    el.style.transform=`translate(${tx}px,${ty}px) rotate(${tr}deg)`;
+  });
+  parallaxTicking=false;
+}
+window.addEventListener('scroll',()=>{
+  if(!parallaxTicking){requestAnimationFrame(updateParallax);parallaxTicking=true;}
+},{passive:true});
+updateParallax();
+
+/* ============ MODE SELECTORS ============ */
+document.querySelectorAll('.mode-row').forEach(row=>{
+  row.querySelectorAll('.mode-card').forEach(c=>{
+    c.addEventListener('click',()=>{
+      row.querySelectorAll('.mode-card').forEach(x=>x.classList.remove('selected'));
+      c.classList.add('selected');
+    });
+  });
+});
+
+/* ============ MULTI-SELECT CHIPS (Platforms / Niche / Content Type) ============ */
+document.querySelectorAll('.chip-row[data-multi="true"]').forEach(row=>{
+  row.addEventListener('click', e=>{
+    const chip = e.target.closest('.chip');
+    if(!chip || chip.classList.contains('chip-add')) return;
+    chip.classList.toggle('selected');
+  });
+});
+
+/* ============ "+ ADD" CUSTOM CHIP ============ */
+document.querySelectorAll('.chip-add').forEach(addChip=>{
+  const originalHTML = addChip.innerHTML;
+  addChip.addEventListener('click', e=>{
+    if(addChip.dataset.editing==='true') return;
+    e.stopPropagation();
+    addChip.dataset.editing='true';
+    addChip.innerHTML='';
+    const input=document.createElement('input');
+    input.type='text';
+    input.className='chip-add-input';
+    input.placeholder='Type & press Enter';
+    addChip.appendChild(input);
+    input.focus();
+
+    function finish(){
+      if(addChip.dataset.editing!=='true') return;
+      addChip.dataset.editing='false';
+      const val=input.value.trim();
+      if(val){
+        const newChip=document.createElement('div');
+        newChip.className='chip selected';
+        newChip.textContent=val;
+        addChip.parentNode.insertBefore(newChip, addChip);
+      }
+      addChip.innerHTML=originalHTML;
+    }
+    input.addEventListener('click', ev=>ev.stopPropagation());
+    input.addEventListener('keydown', ev=>{
+      if(ev.key==='Enter'){ ev.preventDefault(); finish(); }
+      else if(ev.key==='Escape'){ addChip.dataset.editing='false'; addChip.innerHTML=originalHTML; }
+    });
+    input.addEventListener('blur', ()=>{ setTimeout(finish,150); });
+  });
+});
+
+/* ============ CONTENT IDEA: OWN IDEA vs SUGGEST 3 IDEAS ============ */
+const ownIdeaWrap=document.getElementById('ownIdeaWrap');
+const suggestIdeaWrap=document.getElementById('suggestIdeaWrap');
+const ideaSourceRow=document.querySelector('.mode-row[data-group="ideasource"]');
+if(ideaSourceRow){
+  ideaSourceRow.querySelectorAll('.mode-card').forEach(card=>{
+    card.addEventListener('click',()=>{
+      const mode=card.dataset.ideasource;
+      if(mode==='own'){
+        ownIdeaWrap.style.display='';
+        suggestIdeaWrap.style.display='none';
+      }else{
+        ownIdeaWrap.style.display='none';
+        suggestIdeaWrap.style.display='';
+      }
+    });
+  });
+}
+
+const ideaCategories=[
+  { keys:['face wash','skincare','cleanser','serum','moisturizer','lotion','cream','skin care'],
+    ideas:[
+      'Morning vs night routine using {subject} — show the difference in one before/after clip.',
+      '"3 mistakes you\'re making with {subject}" — quick myth-busting talking-head video.',
+      'Unbox-and-react: first impressions trying {subject} for 7 days, with a day-by-day skin diary.'
+    ]},
+  { keys:['camera','gadget','phone','laptop','headphone','earbuds','drone','tech','smartwatch','speaker'],
+    ideas:[
+      'Unboxing + first 24 hours with {subject} — capture the "wow" moment on camera.',
+      '"5 hidden features of {subject} nobody tells you about" — fast-cut tips video.',
+      'Real-world test: put {subject} through a day-in-the-life challenge and show the results.'
+    ]},
+  { keys:['food','snack','drink','coffee','recipe','restaurant','meal'],
+    ideas:[
+      'Taste-test reaction video trying {subject} for the first time on camera.',
+      '"Rate my attempt" — recreate a recipe using {subject} and grade the result.',
+      'Behind-the-scenes: how {subject} is made or prepared, told as a mini-documentary.'
+    ]},
+  { keys:['fitness','gym','workout','supplement','protein','yoga','apparel','shoes','sportswear'],
+    ideas:[
+      '7-day challenge using {subject} — daily check-ins on progress and honest results.',
+      '"Is {subject} worth it?" — myth vs reality breakdown with a demo.',
+      'Quick-fire Q&A answering the top 3 questions people ask about {subject}.'
+    ]}
+];
+const genericIdeas=[
+  'Unboxing / first-impressions video introducing {subject} to your audience.',
+  '"3 things I wish I knew before trying {subject}" — a relatable, honest take.',
+  'A day using {subject} in real life, shown as a quick before/after story.'
+];
+function getIdeasFor(subject){
+  const s=subject.toLowerCase();
+  for(const cat of ideaCategories){
+    if(cat.keys.some(k=>s.includes(k))){
+      return cat.ideas.map(t=>t.replace(/\{subject\}/g, subject));
+    }
+  }
+  return genericIdeas.map(t=>t.replace(/\{subject\}/g, subject));
+}
+const suggestIdeasBtn=document.getElementById('suggestIdeasBtn');
+const suggestedIdeasList=document.getElementById('suggestedIdeasList');
+if(suggestIdeasBtn){
+  suggestIdeasBtn.addEventListener('click',()=>{
+    const subject=document.getElementById('inpSuggestSubject').value.trim();
+    if(!subject){
+      document.getElementById('inpSuggestSubject').classList.add('err');
+      return;
+    }
+    document.getElementById('inpSuggestSubject').classList.remove('err');
+    const ideas=getIdeasFor(subject);
+    suggestedIdeasList.innerHTML = ideas.map((idea,i)=>`
+      <div class="rec-card glass" style="margin-bottom:12px;padding:16px 18px;">
+        <p style="margin-bottom:10px;">${idea}</p>
+        <div class="rec-apply" data-idea-index="${i}">Use this idea →</div>
+      </div>
+    `).join('');
+    suggestedIdeasList.style.display='';
+    suggestedIdeasList.querySelectorAll('[data-idea-index]').forEach((btn,i)=>{
+      btn.addEventListener('click',()=>{
+        document.getElementById('inpIdea').value = ideas[i];
+        ownIdeaWrap.style.display='';
+        suggestIdeaWrap.style.display='none';
+        ideaSourceRow.querySelectorAll('.mode-card').forEach(x=>x.classList.remove('selected'));
+        ideaSourceRow.querySelector('[data-ideasource="own"]').classList.add('selected');
+      });
+    });
+  });
+}
+
+/* ============ SCREEN 4 — AI THINKING SEQUENCE ============ */
+
+let thinkingDone = false;
+
+async function runThinkingSequence()
+{
+  if (thinkingDone) return;
+
+  const items = document.querySelectorAll('.check-item');
+  const fill = document.getElementById('progressFill');
+  const status = document.getElementById('statusText');
+
+  const statuses = [
+    'Reading your content idea...',
+    'Checking your platform...',
+    'Preparing your analysis...',
+    'Building content structure...',
+    'Estimating production time...',
+    'Contacting CreatorIQ backend...',
+    'Preparing results...',
+    'Finishing analysis...'
+  ];
+
+  const idea = document.getElementById('inpIdea').value.trim();
+
+  if (idea.length < 10 || idea.length > 1000) {
+    alert('Please enter a content idea between 10 and 1,000 characters.');
+    goTo(3);
+    return;
+  }
+
+  function selectedLabels(groupName) {
+    return Array.from(
+      document.querySelectorAll(
+        `.chip-row[data-group="${groupName}"] .chip.selected`
+      )
+    ).map(chip => chip.textContent.trim());
+  }
+
+  const supportedPlatforms = ['YouTube', 'Instagram', 'TikTok'];
+  const selectedPlatforms = selectedLabels('platform2');
+  const platform = selectedPlatforms.find(p =>
+    supportedPlatforms.includes(p)
+  ) || 'YouTube';
+
+  const formatMap = {
+    'Reel': 'Short video',
+    'Short': 'Short video',
+    'Long-form Video': 'Long video',
+    'Carousel Post': 'Carousel',
+    'Live': 'Live'
+  };
+
+  const selectedFormats = selectedLabels('ctype');
+  const contentFormat = selectedFormats
+    .map(format => formatMap[format])
+    .find(Boolean) || 'Short video';
+
+  const selectedNiches = selectedLabels('niche');
+  const targetAudience = selectedNiches.length
+    ? `${selectedNiches[0]} audience`
+    : 'general social media audience';
+
+  items.forEach(item => item.classList.remove('active', 'done'));
+  fill.style.width = '0%';
+  status.textContent = 'Starting analysis...';
+
+  let index = 0;
+
+  function animateStep() {
+    if (index > 0 && items[index - 1]) {
+      items[index - 1].classList.remove('active');
+      items[index - 1].classList.add('done');
+    }
+
+    if (index < items.length) {
+      items[index].classList.add('active');
+      status.textContent = statuses[
+        Math.min(index, statuses.length - 1)
+      ];
+      fill.style.width = `${((index + 1) / items.length) * 100}%`;
+      index++;
+      setTimeout(animateStep, 350);
+      return;
+    }
+
+    requestAnalysis();
+  }
+
+  async function requestAnalysis() {
+    status.textContent = 'Contacting CreatorIQ backend...';
+
+    try {
+      const response = await fetch('http://127.0.0.1:8000/analysis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idea,
+          platform,
+          content_format: contentFormat,
+          target_audience: targetAudience
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          typeof data.detail === 'string'
+            ? data.detail
+            : `Analysis failed (HTTP ${response.status}).`
+        );
+      }
+
+      const hook = document.getElementById('apiHook');
+      const structure = document.getElementById('apiStructure');
+      const productionTime = document.getElementById('apiProductionTime');
+      const note = document.getElementById('apiEstimateNote');
+      const error = document.getElementById('apiError');
+      const meta = document.getElementById('apiMeta');
+
+      if (!hook || !structure || !productionTime) {
+        throw new Error('The analysis result display has not been added to the HTML yet.');
+      }
+
+      hook.textContent = data.hook_suggestion || 'No hook returned.';
+
+      structure.replaceChildren();
+      (data.structure || []).forEach(text => {
+        const li = document.createElement('li');
+        li.textContent = text;
+        structure.appendChild(li);
+      });
+
+      productionTime.textContent =
+        `${data.estimated_production_minutes} minutes (rough estimate)`;
+
+      if (note) note.textContent = data.estimate_note || '';
+      if (error) error.textContent = '';
+      if (meta) {
+        meta.textContent =
+          `Analysis type: ${data.analysis_type} | Platform: ${data.platform} | Format: ${data.content_format}`;
+      }
+
+      status.textContent = 'Analysis complete.';
+      thinkingDone = true;
+      setTimeout(() => goTo(5), 700);
+
+    } catch (err) {
+      console.error('CreatorIQ analysis error:', err);
+      status.textContent = 'Analysis could not be completed.';
+      alert(
+        'CreatorIQ could not display the analysis. ' +
+        'Check that the backend is running and that the browser allows the API request. ' +
+        'Details: ' + err.message
+      );
+      thinkingDone = false;
+      setTimeout(() => goTo(3), 700);
+    }
+  }
+
+  setTimeout(animateStep, 300);
+}
+
+/* orb canvas for thinking screen */
+const tcanvas=document.getElementById('thinkCanvas'), tctx=tcanvas.getContext('2d');
+let tt=0;
+function drawThinkOrb(){
+  tctx.clearRect(0,0,300,300);
+  const cx=150,cy=150;
+  for(let i=0;i<3;i++){
+    const rad=50+i*22+Math.sin(tt/40+i)*6;
+    tctx.beginPath();
+    tctx.arc(cx,cy,rad,0,Math.PI*2);
+    tctx.strokeStyle=`rgba(${i===1?'214,83,109':'245,201,74'},${0.35-i*0.08})`;
+    tctx.lineWidth=1.5;
+    tctx.stroke();
+  }
+  for(let i=0;i<10;i++){
+    const a=tt/60+i*(Math.PI*2/10);
+    const r=75+Math.sin(tt/30+i)*8;
+    const x=cx+Math.cos(a)*r, y=cy+Math.sin(a)*r;
+    tctx.beginPath();tctx.arc(x,y,2.2,0,Math.PI*2);
+    tctx.fillStyle='rgba(245,201,74,0.85)';tctx.fill();
+  }
+  const grad=tctx.createRadialGradient(cx,cy,0,cx,cy,45);
+  grad.addColorStop(0,'rgba(214,83,109,0.9)');grad.addColorStop(1,'rgba(214,83,109,0)');
+  tctx.beginPath();tctx.arc(cx,cy,40+Math.sin(tt/25)*4,0,Math.PI*2);tctx.fillStyle=grad;tctx.fill();
+  tt++;
+  requestAnimationFrame(drawThinkOrb);
+}
+drawThinkOrb();
+
+/* ============ SCREEN 5 — COUNTERS + GAUGE ============ */
+let countersDone=false;
+function animateCounters(){
+  document.querySelectorAll('.counter').forEach(el=>{
+    const target=parseFloat(el.dataset.target);
+    const decimals=parseInt(el.dataset.decimals||'0');
+    const suffix=el.dataset.suffix||'';
+    let start=null; const duration=1400;
+    function frame(ts){
+      if(!start)start=ts;
+      const prog=Math.min((ts-start)/duration,1);
+      const eased=1-Math.pow(1-prog,3);
+      const val=target*eased;
+      el.textContent=(decimals?val.toFixed(decimals):Math.round(val).toLocaleString())+suffix;
+      if(prog<1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  });
+  const arc=document.querySelector('.gauge-arc');
+  if(arc){
+    const circumference=169.6;
+    const target=0.82;
+    setTimeout(()=>{arc.style.transition='stroke-dashoffset 1.4s cubic-bezier(.2,.8,.2,1)';arc.style.strokeDashoffset=circumference*(1-target);},100);
+  }
+}
+
+/* ============ SCREEN 6 — REC CARDS + CHAT ============ */
+document.querySelectorAll('[data-rec]').forEach(card=>{
+  card.addEventListener('click',()=>{
+    card.classList.toggle('applied');
+    const label=card.querySelector('.rec-apply');
+    label.textContent=card.classList.contains('applied')?'Applied ✓':'Apply suggestion →';
+  });
+});
+
+let chatStarted=false;
+const chatScript=[
+  {who:'ai',text:"Can you think of a stronger opening? The first two seconds are losing viewers right now."},
+  {who:'user',text:"Maybe... 'Here's how I edit 3x faster'?"},
+  {who:'ai',text:"Good. Can you make it shorter — under 5 words?"},
+  {who:'user',text:"'Edit 3x faster. Here's how.'"},
+  {who:'ai',text:"That's a stronger hook. Locking it into your script."}
+];
+function startChatDemo(){
+  if(chatStarted) return; chatStarted=true;
+  const body=document.getElementById('chatBody');
+  let i=0;
+  function next(){
+    if(i>=chatScript.length) return;
+    const m=chatScript[i];
+    const div=document.createElement('div');
+    div.className='msg '+m.who;
+    div.textContent=m.text;
+    body.appendChild(div);
+    body.scrollTop=body.scrollHeight;
+    i++;
+    setTimeout(next, m.who==='ai'?1500:1100);
+  }
+  setTimeout(next,500);
+}
+document.getElementById('chatSendBtn').addEventListener('click',sendChat);
+document.getElementById('chatInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat();});
+function sendChat(){
+  const input=document.getElementById('chatInput');
+  if(!input.value.trim())return;
+  const body=document.getElementById('chatBody');
+  const div=document.createElement('div');
+  div.className='msg user';div.textContent=input.value;
+  body.appendChild(div);
+  body.scrollTop=body.scrollHeight;
+  input.value='';
+  setTimeout(()=>{
+    const r=document.createElement('div');
+    r.className='msg ai';
+    r.textContent="Noted — tightening the next draft around that.";
+    body.appendChild(r);
+    body.scrollTop=body.scrollHeight;
+  },1000);
+}
+
+/* ============ SCREEN 7 — TREND LINES ============ */
+let trendsDrawn=false;
+function drawTrendLines(){
+  if(trendsDrawn)return; trendsDrawn=true;
+  const growthPts=[[0,140],[70,120],[140,128],[210,95],[280,100],[350,60],[420,45],[500,20]];
+  const debtPts=[[0,20],[30,40],[60,55],[90,70],[120,90],[150,110],[190,130],[220,145]];
+  animatePolyline('growthLine',growthPts);
+  animatePolyline('debtLine',debtPts);
+}
+function animatePolyline(id,pts){
+  const el=document.getElementById(id);
+  let frame=0; const total=40;
+  function step(){
+    frame++;
+    const cut=Math.ceil(pts.length*(frame/total));
+    const shown=pts.slice(0,Math.max(2,cut));
+    el.setAttribute('points',shown.map(p=>p.join(',')).join(' '));
+    if(frame<total)requestAnimationFrame(step);
+  }
+  step();
+}
+
+/* ============ NAV STEPPER VISIBILITY ============ */
+function updateStepperVisibility(){
+  const hide = currentScreen===1 && !authOpen;
+  stepper.style.opacity = hide ? '0' : '1';
+  stepper.style.pointerEvents = hide ? 'none' : 'auto';
+}
+stepper.style.transition='opacity .3s ease';
+updateStepperVisibility();
+
+/* ============ AMBIENT FLOATING PLATFORM ICONS ============ */
+const floatLayer=document.getElementById('floatLayer');
+const platformIcons=[
+  // Instagram-style camera glyph
+  `<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="6" stroke="#f5c94a" stroke-width="1.6"/><circle cx="12" cy="12" r="4.2" stroke="#f5c94a" stroke-width="1.6"/><circle cx="17.2" cy="6.8" r="1.1" fill="#f5c94a"/></svg>`,
+  // YouTube-style play glyph
+  `<svg viewBox="0 0 24 24" fill="none"><rect x="2.5" y="5" width="19" height="14" rx="5" stroke="#ffa2b6" stroke-width="1.6"/><path d="M10 9l6 3-6 3V9z" fill="#ffa2b6"/></svg>`,
+  // TikTok-style musical note glyph
+  `<svg viewBox="0 0 24 24" fill="none"><path d="M13 3v11.2a3.6 3.6 0 1 1-2.4-3.4" stroke="#f5c94a" stroke-width="1.6" stroke-linecap="round"/><path d="M13 3c.6 2.4 2.4 4 5 4.2" stroke="#ffa2b6" stroke-width="1.6" stroke-linecap="round"/></svg>`,
+  // X glyph
+  `<svg viewBox="0 0 24 24" fill="none"><path d="M5 5l14 14M19 5L5 19" stroke="#c9bfae" stroke-width="1.8" stroke-linecap="round"/></svg>`
+];
+function spawnFloatIcon(){
+  const el=document.createElement('div');
+  el.className='float-icon';
+  el.innerHTML=platformIcons[Math.floor(Math.random()*platformIcons.length)];
+  // keep icons out of the central readability column (roughly 26%–74% width)
+  let leftPct;
+  if(Math.random()<0.5){ leftPct = 2 + Math.random()*20; }
+  else{ leftPct = 78 + Math.random()*20; }
+  el.style.left = leftPct+'%';
+  const duration = 14 + Math.random()*10;
+  const opacity = 0.10 + Math.random()*0.10;
+  el.style.setProperty('--fi-op', opacity);
+  el.style.animationDuration = duration+'s';
+  floatLayer.appendChild(el);
+  setTimeout(()=>el.remove(), duration*1000 + 200);
+}
+setInterval(()=>{ if(document.querySelectorAll('.float-icon').length<6) spawnFloatIcon(); }, 2200);
+spawnFloatIcon();
+
+/* ============ AUTH OVERLAY LOGIC ============ */
+const authOverlay=document.getElementById('authOverlay');
+function openAuth(){
+  authOpen=true;
+  authOverlay.classList.add('open');
+  updateStepperVisibility();
+}
+function closeAuth(){
+  authOpen=false;
+  authOverlay.classList.remove('open');
+  updateStepperVisibility();
+}
+document.getElementById('getStartedBtn').addEventListener('click', openAuth);
+document.getElementById('authCloseBtn').addEventListener('click', closeAuth);
+
+const loginForm=document.getElementById('loginForm'), signupForm=document.getElementById('signupForm');
+document.getElementById('toSignup').addEventListener('click',()=>{
+  loginForm.classList.remove('active'); signupForm.classList.add('active');
+  document.getElementById('loginAccountErr').classList.remove('show');
+});
+document.getElementById('toLogin').addEventListener('click',()=>{
+  signupForm.classList.remove('active'); loginForm.classList.add('active');
+});
+
+/* password visibility toggles */
+document.querySelectorAll('.toggle-vis').forEach(t=>{
+  t.addEventListener('click',()=>{
+    const input=document.getElementById(t.dataset.target);
+    const showing = input.type==='text';
+    input.type = showing ? 'password' : 'text';
+    t.textContent = showing ? 'SHOW' : 'HIDE';
+  });
+});
+
+function setFieldError(inputId, errId, hasError){
+  const input=document.getElementById(inputId), err=document.getElementById(errId);
+  input.classList.toggle('err', hasError);
+  input.classList.toggle('ok', !hasError && input.value.trim()!=='');
+  err.classList.toggle('show', hasError);
+}
+const emailRe=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/* Registered accounts (session-only, for this preview) */
+const registeredAccounts=new Set();
+const loginAccountErr=document.getElementById('loginAccountErr');
+
+/* LOGIN validation */
+loginForm.addEventListener('submit', e=>{
+  e.preventDefault();
+  const email=document.getElementById('loginEmail').value.trim();
+  const pw=document.getElementById('loginPassword').value;
+  const emailOk = emailRe.test(email);
+  const pwOk = pw.length>0;
+  setFieldError('loginEmail','loginEmailErr', !emailOk);
+  setFieldError('loginPassword','loginPasswordErr', !pwOk);
+  loginAccountErr.classList.remove('show');
+  if(emailOk && pwOk){
+    if(!registeredAccounts.has(email.toLowerCase())){
+      loginAccountErr.classList.add('show');
+      document.getElementById('loginEmail').classList.add('err');
+      return;
+    }
+    closeAuth();
+    goTo(2);
+  }
+});
+['loginEmail','loginPassword'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',()=>{
+    loginAccountErr.classList.remove('show');
+    if(id==='loginEmail') setFieldError('loginEmail','loginEmailErr', document.getElementById(id).value.trim()!=='' && !emailRe.test(document.getElementById(id).value.trim()));
+    else setFieldError('loginPassword','loginPasswordErr', false);
+  });
+});
+
+/* SIGNUP validation + password strength */
+function checkPwRequirements(pw){
+  const reqs={
+    len: pw.length>=8,
+    upper: /[A-Z]/.test(pw),
+    num: /[0-9]/.test(pw),
+    special: /[^A-Za-z0-9]/.test(pw)
+  };
+  document.querySelectorAll('#pwReqs .req').forEach(r=>{
+    r.classList.toggle('met', reqs[r.dataset.req]);
+  });
+  const metCount=Object.values(reqs).filter(Boolean).length;
+  const bar=document.getElementById('pwStrengthBar');
+  const pct=(metCount/4)*100;
+  bar.style.width=pct+'%';
+  bar.style.background = metCount<=1 ? 'var(--danger)' : metCount<=3 ? 'var(--amber)' : 'var(--green)';
+  return Object.values(reqs).every(Boolean);
+}
+document.getElementById('suPassword').addEventListener('input', e=>{
+  checkPwRequirements(e.target.value);
+});
+signupForm.addEventListener('submit', e=>{
+  e.preventDefault();
+  const name=document.getElementById('suName').value.trim();
+  const email=document.getElementById('suEmail').value.trim();
+  const pw=document.getElementById('suPassword').value;
+  const pw2=document.getElementById('suPassword2').value;
+
+  const nameOk = name.length>0;
+  const emailOk = emailRe.test(email);
+  const pwOk = checkPwRequirements(pw);
+  const matchOk = pw2.length>0 && pw===pw2;
+
+  setFieldError('suName','suNameErr', !nameOk);
+  setFieldError('suEmail','suEmailErr', !emailOk);
+  setFieldError('suPassword','suPasswordErr', !pwOk);
+  setFieldError('suPassword2','suPassword2Err', !matchOk);
+
+  if(nameOk && emailOk && pwOk && matchOk){
+    registeredAccounts.add(email.toLowerCase());
+    closeAuth();
+    goTo(2);
+  }
+});
+['suName','suEmail'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',()=>{
+    if(id==='suEmail') setFieldError('suEmail','suEmailErr', document.getElementById(id).value.trim()!=='' && !emailRe.test(document.getElementById(id).value.trim()));
+    else setFieldError('suName','suNameErr', false);
+  });
+});
+document.getElementById('suPassword2').addEventListener('input', e=>{
+  const pw=document.getElementById('suPassword').value;
+  setFieldError('suPassword2','suPassword2Err', e.target.value.length>0 && e.target.value!==pw);
+});
+
+/* subtle orbit canvas on the auth left panel, reusing the same node-network look */
+const aCanvas=document.getElementById('authOrbit'), actx=aCanvas.getContext('2d');
+function sizeACanvas(){ aCanvas.width=aCanvas.offsetWidth; aCanvas.height=aCanvas.offsetHeight; }
+sizeACanvas(); window.addEventListener('resize', sizeACanvas);
+const aNodes=[];
+for(let i=0;i<18;i++){
+  aNodes.push({x:Math.random(), y:Math.random(), vx:(Math.random()-0.5)*0.0006, vy:(Math.random()-0.5)*0.0006, r:1+Math.random()*1.6});
+}
+function drawAuthOrbit(){
+  if(aCanvas.width>0){
+    actx.clearRect(0,0,aCanvas.width,aCanvas.height);
+    aNodes.forEach(n=>{
+      n.x+=n.vx; n.y+=n.vy;
+      if(n.x<0||n.x>1)n.vx*=-1; if(n.y<0||n.y>1)n.vy*=-1;
+    });
+    actx.strokeStyle='rgba(245,201,74,0.12)';
+    for(let i=0;i<aNodes.length;i++){
+      for(let j=i+1;j<aNodes.length;j++){
+        const a=aNodes[i], b=aNodes[j];
+        const ax=a.x*aCanvas.width, ay=a.y*aCanvas.height, bx=b.x*aCanvas.width, by=b.y*aCanvas.height;
+        const d=Math.hypot(ax-bx,ay-by);
+        if(d<140){ actx.globalAlpha=1-d/140; actx.beginPath(); actx.moveTo(ax,ay); actx.lineTo(bx,by); actx.stroke(); }
+      }
+    }
+    actx.globalAlpha=1;
+    aNodes.forEach(n=>{
+      actx.beginPath(); actx.arc(n.x*aCanvas.width, n.y*aCanvas.height, n.r, 0, Math.PI*2);
+      actx.fillStyle='rgba(224,110,70,0.7)'; actx.fill();
+    });
+  }
+  requestAnimationFrame(drawAuthOrbit);
+}
+drawAuthOrbit();
+</script>
+</body>
+</html>
