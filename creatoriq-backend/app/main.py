@@ -17,6 +17,7 @@ from app import __version__
 from app.api.health import router as health_router
 from app.api.creators import router as creators_router
 from app.api.analysis import router as analysis_router
+from app.api.auth import router as auth_router
 from app.core.config import Settings, get_settings
 from app.core.errors import register_exception_handlers
 from app.core.logging import configure_logging
@@ -62,5 +63,5 @@ def create_app(
     app.include_router(health_router)
     app.include_router(creators_router)
     app.include_router(analysis_router)
-
+    app.include_router(auth_router)
     return app

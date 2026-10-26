@@ -44,6 +44,9 @@ class Settings(BaseSettings):
 
     db_connect_timeout: int = Field(default=3, ge=1, le=60)
     db_echo: bool = False
+    jwt_secret_key: SecretStr
+    jwt_access_token_minutes: int = Field(default=30, ge=1, le=1440)
+
 
     @field_validator("log_level", mode="before")
     @classmethod

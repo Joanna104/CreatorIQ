@@ -7,7 +7,7 @@ from sqlalchemy import create_engine, pool
 
 from app.core.config import get_settings
 from app.db.base import Base
-from app.db.models import CreatorProfile  # noqa: F401
+from app.db.models import CreatorProfile, UserAccount  # noqa: F401
 
 config = context.config
 if config.config_file_name is not None and config.attributes.get("configure_logger", True):

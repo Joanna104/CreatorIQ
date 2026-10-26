@@ -2014,30 +2014,70 @@ function setFieldError(inputId, errId, hasError){
 }
 const emailRe=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/* Registered accounts (session-only, for this preview) */
-const registeredAccounts=new Set();
+/* ============ CREATORIQ AUTH API ============ */
+const API_BASE_URL = 'http://127.0.0.1:8000';
+
+async function authApi(endpoint, payload) {
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const detail = typeof data.detail === 'string'
+      ? data.detail
+      : 'Something went wrong. Please try again.';
+    throw new Error(detail);
+  }
+  return data;
+}
+
+
+/* Authentication status and validation */
+
 const loginAccountErr=document.getElementById('loginAccountErr');
 
 /* LOGIN validation */
-loginForm.addEventListener('submit', e=>{
+
+loginForm.addEventListener('submit', async e => {
   e.preventDefault();
-  const email=document.getElementById('loginEmail').value.trim();
-  const pw=document.getElementById('loginPassword').value;
+
+  const email = document.getElementById('loginEmail').value.trim();
+  const pw = document.getElementById('loginPassword').value;
+
   const emailOk = emailRe.test(email);
-  const pwOk = pw.length>0;
-  setFieldError('loginEmail','loginEmailErr', !emailOk);
-  setFieldError('loginPassword','loginPasswordErr', !pwOk);
+  const pwOk = pw.length > 0;
+
+  setFieldError('loginEmail', 'loginEmailErr', !emailOk);
+  setFieldError('loginPassword', 'loginPasswordErr', !pwOk);
   loginAccountErr.classList.remove('show');
-  if(emailOk && pwOk){
-    if(!registeredAccounts.has(email.toLowerCase())){
-      loginAccountErr.classList.add('show');
-      document.getElementById('loginEmail').classList.add('err');
-      return;
-    }
+
+  if (!emailOk || !pwOk) return;
+
+  try {
+    const result = await authApi('/auth/login', {
+      email,
+      password: pw
+    });
+
+    // Temporary storage for this browser tab.
+    // Later, we'll improve token/session handling.
+    sessionStorage.setItem('creatoriq_access_token', result.access_token);
+
     closeAuth();
     goTo(2);
+  } catch (error) {
+    loginAccountErr.textContent =
+      error.message === 'Invalid email or password.'
+        ? 'Invalid email or password.'
+        : error.message || 'Unable to log in. Please try again.';
+
+    loginAccountErr.classList.add('show');
   }
 });
+
 ['loginEmail','loginPassword'].forEach(id=>{
   document.getElementById(id).addEventListener('input',()=>{
     loginAccountErr.classList.remove('show');
@@ -2067,7 +2107,7 @@ function checkPwRequirements(pw){
 document.getElementById('suPassword').addEventListener('input', e=>{
   checkPwRequirements(e.target.value);
 });
-signupForm.addEventListener('submit', e=>{
+signupForm.addEventListener('submit', async e=>{
   e.preventDefault();
   const name=document.getElementById('suName').value.trim();
   const email=document.getElementById('suEmail').value.trim();
@@ -2083,11 +2123,42 @@ signupForm.addEventListener('submit', e=>{
   setFieldError('suEmail','suEmailErr', !emailOk);
   setFieldError('suPassword','suPasswordErr', !pwOk);
   setFieldError('suPassword2','suPassword2Err', !matchOk);
+  if(!(nameOk && emailOk && pwOk && matchOk)) return;
 
-  if(nameOk && emailOk && pwOk && matchOk){
-    registeredAccounts.add(email.toLowerCase());
-    closeAuth();
-    goTo(2);
+  const submitButton=signupForm.querySelector('[type="submit"]');
+  const originalButtonText=submitButton ? submitButton.textContent : '';
+  if(submitButton){ submitButton.disabled=true; submitButton.textContent='Creating account…'; }
+  try {
+    await authApi('/auth/register', {
+      name,
+      email,
+      password: pw,
+      confirm_password: pw2
+    });
+    // Registration succeeds on the server. Ask the user to sign in explicitly.
+    signupForm.reset();
+    checkPwRequirements('');
+    signupForm.classList.remove('active');
+    loginForm.classList.add('active');
+    document.getElementById('loginEmail').value=email;
+    loginAccountErr.classList.remove('show');
+    const signupNotice=document.getElementById('signupApiNotice');
+    if(signupNotice) signupNotice.remove();
+    const notice=document.createElement('div');
+    notice.id='signupApiNotice';
+    notice.className='err-msg show';
+    notice.style.cssText='margin-top:0;margin-bottom:14px;color:var(--green);';
+    notice.textContent='Account created successfully. Please log in.';
+    loginForm.insertBefore(notice, loginForm.querySelector('[type="submit"]'));
+  } catch(error) {
+    const emailError=document.getElementById('suEmailErr');
+    const message=error.message || 'Unable to create account. Please try again.';
+    const detail=emailError.querySelectorAll('span');
+    if(detail.length>1) detail[1].textContent=message;
+    else emailError.textContent=message;
+    emailError.classList.add('show');
+  } finally {
+    if(submitButton){ submitButton.disabled=false; submitButton.textContent=originalButtonText; }
   }
 });
 ['suName','suEmail'].forEach(id=>{

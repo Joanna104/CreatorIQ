@@ -26,3 +26,24 @@ class CreatorProfile(Base):
         server_default=func.now(),
         nullable=False,
     )
+
+class UserAccount(Base):
+    """A user's authentication account."""
+
+    __tablename__ = "user_accounts"
+    __table_args__ = {"schema": APP_SCHEMA}
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    email: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
