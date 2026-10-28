@@ -23,8 +23,8 @@ from app.core.errors import register_exception_handlers
 from app.core.logging import configure_logging
 from app.core.request_id import RequestIDMiddleware
 from app.db.session import build_engine
-
-
+from app.api.ideas import router as ideas_router
+from app.api.classifier import router as classifier_router
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     yield
@@ -46,7 +46,8 @@ def create_app(
     )
     app.state.settings = settings
     app.state.engine = engine or build_engine(settings)
-
+    app.include_router(ideas_router)
+    app.include_router(classifier_router)
     app.add_middleware(RequestIDMiddleware)
     app.add_middleware(
         CORSMiddleware,
@@ -58,6 +59,9 @@ def create_app(
         allow_methods=["GET", "POST", "OPTIONS"],
         allow_headers=["Content-Type"],
     )
+    @app.get("/health")
+    def health_check():
+        return {"status": "ok"}
 
     register_exception_handlers(app)
     app.include_router(health_router)
