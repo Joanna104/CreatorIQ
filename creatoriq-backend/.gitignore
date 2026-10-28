@@ -13,3 +13,7 @@ __pycache__/
 .idea/
 .vscode/
 .DS_Store
+
+# Large local model — do not upload to GitHub
+models/views/creatoriq_model_v2_corrected.pkl
+
